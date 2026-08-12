@@ -37,40 +37,40 @@
     color: var(--text);
     min-height: 100vh;
   }
-  .wrap { max-width: 1040px; margin: 0 auto; padding: 20px 16px 80px; }
-  .main-layout { display: flex; gap: 20px; align-items: flex-start; }
-  .calendar-col { flex: 1 1 640px; }
-  .side-col { flex: 0 1 320px; min-width: 280px; }
-  @media (max-width: 760px) {
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 24px 20px 90px; }
+  .main-layout { display: flex; gap: 28px; align-items: flex-start; }
+  .calendar-col { flex: 1 1 800px; }
+  .side-col { flex: 0 1 380px; min-width: 320px; }
+  @media (max-width: 900px) {
     .main-layout { flex-direction: column; }
     .side-col { flex: 1 1 auto; width: 100%; }
   }
-  h1 { font-size: 20px; margin: 8px 0 20px; }
+  h1 { font-size: 26px; margin: 8px 0 24px; }
   .card {
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
+    border-radius: 14px;
+    padding: 22px;
+    margin-bottom: 20px;
   }
   .hidden { display: none !important; }
-  label { display: block; font-size: 13px; color: var(--sub); margin-bottom: 4px; }
+  label { display: block; font-size: 14px; color: var(--sub); margin-bottom: 5px; }
   input, textarea, select {
     width: 100%;
-    padding: 10px 12px;
-    border-radius: 8px;
+    padding: 12px 14px;
+    border-radius: 9px;
     border: 1px solid var(--border);
     background: var(--bg);
     color: var(--text);
-    font-size: 14px;
-    margin-bottom: 12px;
+    font-size: 15px;
+    margin-bottom: 14px;
   }
-  textarea { resize: vertical; min-height: 50px; }
+  textarea { resize: vertical; min-height: 60px; }
   button {
     border: none;
-    border-radius: 8px;
-    padding: 10px 16px;
-    font-size: 14px;
+    border-radius: 9px;
+    padding: 12px 18px;
+    font-size: 15px;
     cursor: pointer;
     font-weight: 600;
   }
@@ -94,48 +94,48 @@
   @media (prefers-color-scheme: dark) {
     .badge.badge-task { background: #10371f; color: #4ade80; }
   }
-  .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-  .cal-title { font-weight: 700; font-size: 20px; }
-  .cal-header button { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; font-size: 16px; }
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-  .cal-dow { text-align: center; font-size: 13px; color: var(--sub); padding-bottom: 6px; }
+  .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .cal-title { font-weight: 700; font-size: 26px; }
+  .cal-header button { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 20px; font-size: 18px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+  .cal-dow { text-align: center; font-size: 14px; color: var(--sub); padding-bottom: 8px; }
   .cal-day {
     position: relative; aspect-ratio: 1; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; border-radius: 10px; font-size: 17px;
-    cursor: pointer; border: 1px solid transparent; gap: 4px;
+    align-items: center; justify-content: center; border-radius: 12px; font-size: 21px;
+    cursor: pointer; border: 1px solid transparent; gap: 5px;
   }
   .cal-day:hover { background: var(--accent-light); }
   .cal-day.other-month { color: var(--sub); opacity: 0.35; }
   .cal-day.today { border-color: var(--accent); font-weight: 700; }
   .cal-day.selected { background: var(--accent); color: #fff; }
   .cal-day.selected:hover { background: var(--accent); }
-  .cal-dots { display: flex; gap: 3px; height: 7px; }
-  .cal-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .cal-dots { display: flex; gap: 4px; height: 9px; }
+  .cal-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
   .cal-dot.task { background: #16a34a; }
   .cal-day.selected .cal-dot { background: #fff; }
   .list-filter-bar {
     display: flex; justify-content: space-between; align-items: center;
-    margin: 4px 4px 12px; font-size: 13px; color: var(--sub);
+    margin: 4px 4px 14px; font-size: 14px; color: var(--sub);
   }
   .list-filter-bar.hidden { display: none; }
   .list-filter-bar b { color: var(--text); }
-  .group-label { font-size: 13px; color: var(--sub); margin: 20px 0 8px; font-weight: 600; }
+  .group-label { font-size: 15px; color: var(--sub); margin: 22px 0 10px; font-weight: 600; }
   .item {
-    display: flex; align-items: flex-start; gap: 10px;
-    padding: 12px; border: 1px solid var(--border); border-radius: 10px;
-    background: var(--card); margin-bottom: 8px;
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 16px; border: 1px solid var(--border); border-radius: 12px;
+    background: var(--card); margin-bottom: 10px;
   }
   .item.done { opacity: 0.55; }
   .item.overdue .item-date { color: var(--danger); }
-  .item input[type=checkbox] { margin-top: 3px; width: 18px; height: 18px; }
+  .item input[type=checkbox] { margin-top: 3px; width: 20px; height: 20px; }
   .item-body { flex: 1; min-width: 0; }
-  .item-title { font-size: 14px; font-weight: 600; word-break: break-word; }
+  .item-title { font-size: 16px; font-weight: 600; word-break: break-word; }
   .item.done .item-title { text-decoration: line-through; color: var(--done); }
-  .item-date { font-size: 12px; color: var(--sub); margin-top: 2px; }
-  .item-memo { font-size: 13px; color: var(--sub); margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+  .item-date { font-size: 13px; color: var(--sub); margin-top: 3px; }
+  .item-memo { font-size: 14px; color: var(--sub); margin-top: 5px; white-space: pre-wrap; word-break: break-word; }
   .item-actions { display: flex; flex-direction: column; gap: 2px; }
-  .badge { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 10px; background: var(--accent-light); color: var(--accent); margin-left: 6px; }
-  .empty { text-align: center; color: var(--sub); font-size: 13px; padding: 30px 0; }
+  .badge { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 10px; background: var(--accent-light); color: var(--accent); margin-left: 6px; }
+  .empty { text-align: center; color: var(--sub); font-size: 14px; padding: 34px 0; }
   a { color: var(--accent); }
   .token-help { font-size: 12px; color: var(--sub); line-height: 1.6; margin-top: 8px; }
   .token-help ol { padding-left: 18px; margin: 6px 0; }
@@ -194,7 +194,10 @@
         <input id="titleInput" type="text" placeholder="예: 워크숍 준비">
         <label for="memoInput">메모 (선택)</label>
         <textarea id="memoInput" placeholder="세부 내용"></textarea>
-        <button class="btn-primary" id="addBtn">추가하기</button>
+        <div class="row">
+          <button class="btn-primary" id="addBtn">추가하기</button>
+          <button class="btn-ghost hidden" id="cancelEditBtn" style="flex:0 0 auto;">취소</button>
+        </div>
         <div class="status" id="mainStatus"></div>
       </div>
     </div>
@@ -224,6 +227,7 @@ let items = [];
 let currentType = "event";
 let viewYear, viewMonth; // viewMonth is 0-indexed
 let selectedDate = null; // "YYYY-MM-DD" or null (null = show full chronological list)
+let editingId = null; // id of item currently being edited, or null
 
 const authScreen = document.getElementById("authScreen");
 const mainScreen = document.getElementById("mainScreen");
@@ -482,6 +486,11 @@ function renderItem(it, today) {
 
   const actions = document.createElement("div");
   actions.className = "item-actions";
+  const editBtn = document.createElement("button");
+  editBtn.className = "btn-ghost";
+  editBtn.textContent = "수정";
+  editBtn.addEventListener("click", () => startEdit(it.id));
+  actions.appendChild(editBtn);
   const delBtn = document.createElement("button");
   delBtn.className = "btn-danger-text";
   delBtn.textContent = "삭제";
@@ -528,18 +537,40 @@ function applyTypeConfig(type) {
   document.getElementById("memoInput").placeholder = cfg.memoPlaceholder;
 }
 
-document.getElementById("typeEventBtn").addEventListener("click", () => {
-  currentType = "event";
-  document.getElementById("typeEventBtn").classList.add("active");
-  document.getElementById("typeTaskBtn").classList.remove("active");
-  applyTypeConfig("event");
-});
-document.getElementById("typeTaskBtn").addEventListener("click", () => {
-  currentType = "task";
-  document.getElementById("typeTaskBtn").classList.add("active");
-  document.getElementById("typeEventBtn").classList.remove("active");
-  applyTypeConfig("task");
-});
+function setFormType(type) {
+  currentType = type;
+  document.getElementById("typeEventBtn").classList.toggle("active", type === "event");
+  document.getElementById("typeTaskBtn").classList.toggle("active", type === "task");
+  applyTypeConfig(type);
+}
+
+document.getElementById("typeEventBtn").addEventListener("click", () => setFormType("event"));
+document.getElementById("typeTaskBtn").addEventListener("click", () => setFormType("task"));
+
+function startEdit(id) {
+  const it = items.find(i => i.id === id);
+  if (!it) return;
+  editingId = id;
+  setFormType(it.type);
+  document.getElementById("dateInput").value = it.date;
+  document.getElementById("titleInput").value = it.title;
+  document.getElementById("memoInput").value = it.memo || "";
+  document.getElementById("addBtn").textContent = "수정 완료";
+  document.getElementById("cancelEditBtn").classList.remove("hidden");
+  document.querySelector(".side-col").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function resetForm() {
+  editingId = null;
+  document.getElementById("titleInput").value = "";
+  document.getElementById("memoInput").value = "";
+  document.getElementById("dateInput").value = todayStr();
+  document.getElementById("addBtn").textContent = "추가하기";
+  document.getElementById("cancelEditBtn").classList.add("hidden");
+  setFormType("event");
+}
+
+document.getElementById("cancelEditBtn").addEventListener("click", resetForm);
 
 document.getElementById("addBtn").addEventListener("click", async () => {
   const date = document.getElementById("dateInput").value;
@@ -550,13 +581,19 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     mainStatus.className = "status error";
     return;
   }
-  items.push({
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-    date, title, memo, type: currentType, done: false,
-    createdAt: new Date().toISOString()
-  });
-  document.getElementById("titleInput").value = "";
-  document.getElementById("memoInput").value = "";
+  if (editingId) {
+    const it = items.find(i => i.id === editingId);
+    if (it) {
+      it.date = date; it.title = title; it.memo = memo; it.type = currentType;
+    }
+  } else {
+    items.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      date, title, memo, type: currentType, done: false,
+      createdAt: new Date().toISOString()
+    });
+  }
+  resetForm();
   renderAll();
   await saveData();
 });
