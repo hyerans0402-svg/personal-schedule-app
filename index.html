@@ -86,8 +86,14 @@
   .type-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
   .type-toggle button {
     flex: 1; background: var(--bg); color: var(--sub); border: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 6px;
   }
   .type-toggle button.active { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+  .type-sub { font-size: 11px; font-weight: 400; opacity: 0.75; }
+  .badge.badge-task { background: #dcfce7; color: #16a34a; }
+  @media (prefers-color-scheme: dark) {
+    .badge.badge-task { background: #10371f; color: #4ade80; }
+  }
   .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .cal-title { font-weight: 700; font-size: 20px; }
   .cal-header button { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; font-size: 16px; }
@@ -175,10 +181,14 @@
 
       <div class="side-col card">
         <div class="type-toggle">
-          <button type="button" id="typeEventBtn" class="active">📌 일정</button>
-          <button type="button" id="typeTaskBtn">✅ 할일</button>
+          <button type="button" id="typeEventBtn" class="active">
+            📌 일정<span class="type-sub">회의·행사</span>
+          </button>
+          <button type="button" id="typeTaskBtn">
+            ✅ 할일<span class="type-sub">마감일 있는 작업</span>
+          </button>
         </div>
-        <label for="dateInput">날짜</label>
+        <label for="dateInput" id="dateLabel">날짜</label>
         <input id="dateInput" type="date">
         <label for="titleInput">제목</label>
         <input id="titleInput" type="text" placeholder="예: 워크숍 준비">
@@ -423,6 +433,14 @@ function formatDateLabel(dateStr, today) {
   return dateStr + rel;
 }
 
+function dDayText(dateStr, today) {
+  const diffDays = Math.round((new Date(dateStr) - new Date(today)) / 86400000);
+  if (diffDays === 0) return "오늘 마감";
+  if (diffDays === 1) return "내일 마감";
+  if (diffDays < 0) return `마감 ${-diffDays}일 지남`;
+  return `마감까지 ${diffDays}일`;
+}
+
 function renderItem(it, today) {
   const div = document.createElement("div");
   const overdue = it.type === "task" && !it.done && it.date < today;
@@ -439,13 +457,22 @@ function renderItem(it, today) {
   const title = document.createElement("div");
   title.className = "item-title";
   title.textContent = it.title;
+  const badge = document.createElement("span");
   if (it.type === "event") {
-    const badge = document.createElement("span");
     badge.className = "badge";
     badge.textContent = "일정";
-    title.appendChild(badge);
+  } else {
+    badge.className = "badge badge-task";
+    badge.textContent = "할일";
   }
+  title.appendChild(badge);
   body.appendChild(title);
+  if (it.type === "task" && !it.done) {
+    const ddayEl = document.createElement("div");
+    ddayEl.className = "item-date";
+    ddayEl.textContent = dDayText(it.date, today);
+    body.appendChild(ddayEl);
+  }
   if (it.memo) {
     const memo = document.createElement("div");
     memo.className = "item-memo";
@@ -481,15 +508,37 @@ async function deleteItem(id) {
   await saveData();
 }
 
+const TYPE_CONFIG = {
+  event: {
+    dateLabel: "날짜",
+    titlePlaceholder: "예: 전문가 자문회의, 연구단 워크숍",
+    memoPlaceholder: "장소, 참석자 등"
+  },
+  task: {
+    dateLabel: "마감일",
+    titlePlaceholder: "예: 보고서 작성, 제안서 제출, 강사 계약",
+    memoPlaceholder: "세부 내용, 담당자 등"
+  }
+};
+
+function applyTypeConfig(type) {
+  const cfg = TYPE_CONFIG[type];
+  document.getElementById("dateLabel").textContent = cfg.dateLabel;
+  document.getElementById("titleInput").placeholder = cfg.titlePlaceholder;
+  document.getElementById("memoInput").placeholder = cfg.memoPlaceholder;
+}
+
 document.getElementById("typeEventBtn").addEventListener("click", () => {
   currentType = "event";
   document.getElementById("typeEventBtn").classList.add("active");
   document.getElementById("typeTaskBtn").classList.remove("active");
+  applyTypeConfig("event");
 });
 document.getElementById("typeTaskBtn").addEventListener("click", () => {
   currentType = "task";
   document.getElementById("typeTaskBtn").classList.add("active");
   document.getElementById("typeEventBtn").classList.remove("active");
+  applyTypeConfig("task");
 });
 
 document.getElementById("addBtn").addEventListener("click", async () => {
@@ -548,6 +597,7 @@ document.getElementById("saveTokenBtn").addEventListener("click", async () => {
 
 // 초기화
 document.getElementById("dateInput") && (document.getElementById("dateInput").value = todayStr());
+applyTypeConfig("event");
 const now = new Date();
 viewYear = now.getFullYear();
 viewMonth = now.getMonth();
