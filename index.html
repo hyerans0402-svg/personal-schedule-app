@@ -19,7 +19,8 @@
     --vacation-light: #f2e2dc;
     --danger: #bb5b3d;
     --saturday: #3b6ea5;
-    --mine: #eab308;
+    --mine: #2f6fbf;
+    --mine-light: #e2ecf7;
     --done: #a9a08a;
   }
   @media (prefers-color-scheme: dark) {
@@ -37,7 +38,8 @@
       --vacation-light: #3a2620;
       --danger: #e08363;
       --saturday: #7fa8d9;
-      --mine: #fbbf24;
+      --mine: #6fa8e0;
+      --mine-light: #223143;
       --done: #7c775f;
     }
   }
@@ -100,7 +102,7 @@
     flex: 1; background: var(--bg); color: var(--sub); border: 1px solid var(--border);
     display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 6px;
   }
-  .type-toggle button.active { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+  .type-toggle button.active { background: var(--mine-light); color: var(--mine); border-color: var(--mine); }
   #typeTaskBtn.active { background: var(--task-light); color: var(--task); border-color: var(--task); }
   #typeVacationBtn.active { background: var(--vacation-light); color: var(--vacation); border-color: var(--vacation); }
   .type-sub { font-size: 11px; font-weight: 400; opacity: 0.75; }
@@ -110,7 +112,7 @@
     flex: 1; background: var(--bg); color: var(--sub); border: 1px solid var(--border);
     padding: 8px 6px; font-size: 13px;
   }
-  .attend-toggle button.active { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+  .attend-toggle button.active { background: var(--mine-light); color: var(--mine); border-color: var(--mine); }
   #attendRefBtn.active { background: var(--bg); color: var(--text); border-color: var(--sub); }
 
   /* 작성란(side-col)만 확대 */
@@ -163,7 +165,7 @@
   .cal-dots { display: flex; gap: 4px; height: 10px; margin-top: 5px; }
   .cal-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--mine); }
   .cal-dot.task { background: var(--task); }
-  .cal-dot.ref { background: transparent; border: 2px solid var(--accent); width: 7px; height: 7px; }
+  .cal-dot.ref { background: transparent; border: 2px solid var(--mine); width: 7px; height: 7px; }
   .cal-day.selected .cal-dot { background: #fff; }
   .cal-day.selected .cal-dot.ref { background: transparent; border-color: #fff; }
   .list-filter-bar {
@@ -187,7 +189,7 @@
   .item-date { font-size: 12px; color: var(--sub); margin-top: 2px; }
   .item-memo { font-size: 13px; color: var(--sub); margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
   .item-actions { display: flex; flex-direction: column; gap: 2px; }
-  .badge { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 10px; background: var(--accent-light); color: var(--accent); margin-left: 6px; }
+  .badge { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 10px; background: var(--mine-light); color: var(--mine); margin-left: 6px; }
   .empty { text-align: center; color: var(--sub); font-size: 13px; padding: 30px 0; }
   a { color: var(--accent); }
   .token-help { font-size: 12px; color: var(--sub); line-height: 1.6; margin-top: 8px; }
