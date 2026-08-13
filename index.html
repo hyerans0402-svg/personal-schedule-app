@@ -18,6 +18,7 @@
     --vacation: #a8695a;
     --vacation-light: #f2e2dc;
     --danger: #bb5b3d;
+    --saturday: #3b6ea5;
     --done: #a9a08a;
   }
   @media (prefers-color-scheme: dark) {
@@ -34,6 +35,7 @@
       --vacation: #d68b78;
       --vacation-light: #3a2620;
       --danger: #e08363;
+      --saturday: #7fa8d9;
       --done: #7c775f;
     }
   }
@@ -119,9 +121,11 @@
   .cal-grid-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); }
   .cal-dow { text-align: center; font-size: 13px; color: var(--sub); padding: 6px 0; background: var(--card); }
+  .cal-dow.sun { color: var(--danger); }
+  .cal-dow.sat { color: var(--saturday); }
   .cal-day {
     position: relative; aspect-ratio: 1; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; font-size: 17px; background: var(--card);
+    align-items: center; justify-content: flex-start; padding-top: 8px; font-size: 17px; background: var(--card);
     cursor: pointer; gap: 4px; border: 2px solid transparent;
   }
   .cal-day:hover { background: var(--accent-light); }
@@ -131,8 +135,9 @@
   .cal-day.selected:hover { background: var(--accent); }
   .cal-day.vacation { background: var(--vacation-light); }
   .cal-day.vacation.selected { background: var(--vacation); color: #fff; }
-  .cal-day.holiday { color: var(--danger); }
-  .cal-day.holiday.other-month { color: var(--danger); opacity: 0.5; }
+  .cal-day.sat:not(.other-month):not(.selected) { color: var(--saturday); }
+  .cal-day.sun:not(.other-month):not(.selected) { color: var(--danger); }
+  .cal-day.holiday:not(.other-month):not(.selected) { color: var(--danger); }
   .cal-day.holiday.selected { color: #fff; }
   .cal-holiday {
     font-size: 9px; font-weight: 300; color: var(--danger); line-height: 1.1;
@@ -383,9 +388,9 @@ function renderCalendar() {
   const grid = document.getElementById("calGrid");
   grid.innerHTML = "";
 
-  ["일", "월", "화", "수", "목", "금", "토"].forEach(d => {
+  ["일", "월", "화", "수", "목", "금", "토"].forEach((d, i) => {
     const el = document.createElement("div");
-    el.className = "cal-dow";
+    el.className = "cal-dow" + (i === 0 ? " sun" : i === 6 ? " sat" : "");
     el.textContent = d;
     grid.appendChild(el);
   });
@@ -412,13 +417,15 @@ function renderCalendar() {
     const holidayName = KR_HOLIDAYS[dStr];
     const dayItems = itemsByDate[dStr];
     const isVacation = !!(dayItems && dayItems.some(x => x.type === "vacation"));
+    const dow = i % 7; // grid columns always run 일~토, so column index == day-of-week
     const cell = document.createElement("div");
     cell.className = "cal-day"
       + (otherMonth ? " other-month" : "")
       + (dStr === today ? " today" : "")
       + (dStr === selectedDate ? " selected" : "")
       + (holidayName ? " holiday" : "")
-      + (isVacation ? " vacation" : "");
+      + (isVacation ? " vacation" : "")
+      + (dow === 0 ? " sun" : dow === 6 ? " sat" : "");
 
     const num = document.createElement("div");
     num.textContent = d;
