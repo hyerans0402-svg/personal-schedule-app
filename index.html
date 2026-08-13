@@ -102,6 +102,14 @@
   #typeTaskBtn.active { background: var(--task-light); color: var(--task); border-color: var(--task); }
   #typeVacationBtn.active { background: var(--vacation-light); color: var(--vacation); border-color: var(--vacation); }
   .type-sub { font-size: 11px; font-weight: 400; opacity: 0.75; }
+  .attend-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+  .attend-toggle.hidden { display: none; }
+  .attend-toggle button {
+    flex: 1; background: var(--bg); color: var(--sub); border: 1px solid var(--border);
+    padding: 8px 6px; font-size: 13px;
+  }
+  .attend-toggle button.active { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+  #attendRefBtn.active { background: var(--bg); color: var(--text); border-color: var(--sub); }
 
   /* 작성란(side-col)만 확대 */
   .side-col.card { padding: 22px; }
@@ -115,6 +123,8 @@
   .side-col button.btn-primary { font-size: 17px; padding: 14px 20px; }
   .badge.badge-task { background: var(--task-light); color: var(--task); }
   .badge.badge-vacation { background: var(--vacation-light); color: var(--vacation); }
+  .badge.badge-ref { background: var(--bg); color: var(--sub); border: 1px solid var(--border); }
+  .item.ref-only { border-style: dashed; }
   .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .cal-title { font-weight: 700; font-size: 20px; }
   .cal-header button { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; font-size: 16px; }
@@ -147,7 +157,9 @@
   .cal-dots { display: flex; gap: 3px; height: 7px; }
   .cal-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
   .cal-dot.task { background: var(--task); }
+  .cal-dot.ref { background: transparent; border: 1.5px solid var(--accent); width: 5px; height: 5px; }
   .cal-day.selected .cal-dot { background: #fff; }
+  .cal-day.selected .cal-dot.ref { background: transparent; border-color: #fff; }
   .list-filter-bar {
     display: flex; justify-content: space-between; align-items: center;
     margin: 4px 4px 12px; font-size: 13px; color: var(--sub);
@@ -226,6 +238,10 @@
             🏖 휴가<span class="type-sub">연차·휴일</span>
           </button>
         </div>
+        <div class="attend-toggle" id="attendToggle">
+          <button type="button" id="attendMeBtn" class="active" data-val="true">🙋 내 일정</button>
+          <button type="button" id="attendRefBtn" data-val="false">📋 참고용</button>
+        </div>
         <label for="dateInput" id="dateLabel">날짜</label>
         <input id="dateInput" type="date">
         <label for="titleInput">제목</label>
@@ -263,6 +279,7 @@ let token = localStorage.getItem("gh_pat") || "";
 let currentSha = null;
 let items = [];
 let currentType = "event";
+let currentAttending = true; // true = 내 일정(직접 참여), false = 참고용(상급자 일정 등)
 let viewYear, viewMonth; // viewMonth is 0-indexed
 let selectedDate = null; // "YYYY-MM-DD" or null (null = show full chronological list)
 let editingId = null; // id of item currently being edited, or null
@@ -439,13 +456,18 @@ function renderCalendar() {
     }
 
     if (dayItems && dayItems.length) {
-      const dotTypes = [...new Set(dayItems.filter(x => x.type !== "vacation").map(x => x.type))];
-      if (dotTypes.length) {
+      const dotVariants = new Set();
+      dayItems.forEach(x => {
+        if (x.type === "vacation") return;
+        if (x.type === "event") dotVariants.add(x.attending === false ? "event-ref" : "event-mine");
+        else dotVariants.add(x.type);
+      });
+      if (dotVariants.size) {
         const dots = document.createElement("div");
         dots.className = "cal-dots";
-        dotTypes.forEach(t => {
+        dotVariants.forEach(v => {
           const dot = document.createElement("span");
-          dot.className = "cal-dot" + (t === "task" ? " task" : "");
+          dot.className = "cal-dot" + (v === "task" ? " task" : v === "event-ref" ? " ref" : "");
           dots.appendChild(dot);
         });
         cell.appendChild(dots);
@@ -525,7 +547,8 @@ function dDayText(dateStr, today) {
 function renderItem(it, today) {
   const div = document.createElement("div");
   const overdue = it.type === "task" && !it.done && it.date < today;
-  div.className = "item" + (it.done ? " done" : "") + (overdue ? " overdue" : "");
+  const isRef = it.type === "event" && it.attending === false;
+  div.className = "item" + (it.done ? " done" : "") + (overdue ? " overdue" : "") + (isRef ? " ref-only" : "");
 
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
@@ -539,7 +562,10 @@ function renderItem(it, today) {
   title.className = "item-title";
   title.textContent = it.title;
   const badge = document.createElement("span");
-  if (it.type === "event") {
+  if (it.type === "event" && it.attending === false) {
+    badge.className = "badge badge-ref";
+    badge.textContent = "참고";
+  } else if (it.type === "event") {
     badge.className = "badge";
     badge.textContent = "일정";
   } else if (it.type === "task") {
@@ -627,18 +653,28 @@ function setFormType(type) {
   document.getElementById("typeEventBtn").classList.toggle("active", type === "event");
   document.getElementById("typeTaskBtn").classList.toggle("active", type === "task");
   document.getElementById("typeVacationBtn").classList.toggle("active", type === "vacation");
+  document.getElementById("attendToggle").classList.toggle("hidden", type !== "event");
   applyTypeConfig(type);
+}
+
+function setAttending(val) {
+  currentAttending = val;
+  document.getElementById("attendMeBtn").classList.toggle("active", val === true);
+  document.getElementById("attendRefBtn").classList.toggle("active", val === false);
 }
 
 document.getElementById("typeEventBtn").addEventListener("click", () => setFormType("event"));
 document.getElementById("typeTaskBtn").addEventListener("click", () => setFormType("task"));
 document.getElementById("typeVacationBtn").addEventListener("click", () => setFormType("vacation"));
+document.getElementById("attendMeBtn").addEventListener("click", () => setAttending(true));
+document.getElementById("attendRefBtn").addEventListener("click", () => setAttending(false));
 
 function startEdit(id) {
   const it = items.find(i => i.id === id);
   if (!it) return;
   editingId = id;
   setFormType(it.type);
+  if (it.type === "event") setAttending(it.attending !== false);
   document.getElementById("dateInput").value = it.date;
   document.getElementById("titleInput").value = it.title;
   document.getElementById("memoInput").value = it.memo || "";
@@ -655,6 +691,7 @@ function resetForm() {
   document.getElementById("addBtn").textContent = "추가하기";
   document.getElementById("cancelEditBtn").classList.add("hidden");
   setFormType("event");
+  setAttending(true);
 }
 
 document.getElementById("cancelEditBtn").addEventListener("click", resetForm);
@@ -668,15 +705,17 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     mainStatus.className = "status error";
     return;
   }
+  const attending = currentType === "event" ? currentAttending : true;
   if (editingId) {
     const it = items.find(i => i.id === editingId);
     if (it) {
       it.date = date; it.title = title; it.memo = memo; it.type = currentType;
+      it.attending = attending;
     }
   } else {
     items.push({
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-      date, title, memo, type: currentType, done: false,
+      date, title, memo, type: currentType, done: false, attending,
       createdAt: new Date().toISOString()
     });
   }
