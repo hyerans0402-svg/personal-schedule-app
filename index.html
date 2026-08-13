@@ -15,6 +15,8 @@
     --accent-light: #eaf0e2;
     --task: #c9922e;
     --task-light: #f7ecd6;
+    --vacation: #a8695a;
+    --vacation-light: #f2e2dc;
     --danger: #bb5b3d;
     --done: #a9a08a;
   }
@@ -29,6 +31,8 @@
       --accent-light: #2a3324;
       --task: #e0ab52;
       --task-light: #3a2f18;
+      --vacation: #d68b78;
+      --vacation-light: #3a2620;
       --danger: #e08363;
       --done: #7c775f;
     }
@@ -93,6 +97,8 @@
     display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 6px;
   }
   .type-toggle button.active { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+  #typeTaskBtn.active { background: var(--task-light); color: var(--task); border-color: var(--task); }
+  #typeVacationBtn.active { background: var(--vacation-light); color: var(--vacation); border-color: var(--vacation); }
   .type-sub { font-size: 11px; font-weight: 400; opacity: 0.75; }
 
   /* 작성란(side-col)만 확대 */
@@ -106,23 +112,27 @@
   .side-col .type-sub { font-size: 12px; }
   .side-col button.btn-primary { font-size: 17px; padding: 14px 20px; }
   .badge.badge-task { background: var(--task-light); color: var(--task); }
+  .badge.badge-vacation { background: var(--vacation-light); color: var(--vacation); }
   .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .cal-title { font-weight: 700; font-size: 20px; }
   .cal-header button { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; font-size: 16px; }
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-  .cal-dow { text-align: center; font-size: 13px; color: var(--sub); padding-bottom: 6px; }
+  .cal-grid-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); }
+  .cal-dow { text-align: center; font-size: 13px; color: var(--sub); padding: 6px 0; background: var(--card); }
   .cal-day {
     position: relative; aspect-ratio: 1; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; border-radius: 10px; font-size: 17px;
-    cursor: pointer; border: 1px solid transparent; gap: 4px;
+    align-items: center; justify-content: center; font-size: 17px; background: var(--card);
+    cursor: pointer; gap: 4px; border: 2px solid transparent;
   }
   .cal-day:hover { background: var(--accent-light); }
-  .cal-day.other-month { color: var(--sub); opacity: 0.35; }
-  .cal-day.today { border-color: var(--accent); font-weight: 700; }
+  .cal-day.other-month { color: var(--sub); opacity: 0.5; }
+  .cal-day.today { border-color: var(--accent); font-weight: 700; z-index: 1; }
   .cal-day.selected { background: var(--accent); color: #fff; }
   .cal-day.selected:hover { background: var(--accent); }
+  .cal-day.vacation { background: var(--vacation-light); }
+  .cal-day.vacation.selected { background: var(--vacation); color: #fff; }
   .cal-day.holiday { color: var(--danger); }
-  .cal-day.holiday.other-month { color: var(--danger); opacity: 0.35; }
+  .cal-day.holiday.other-month { color: var(--danger); opacity: 0.5; }
   .cal-day.holiday.selected { color: #fff; }
   .cal-holiday {
     font-size: 9px; font-weight: 300; color: var(--danger); line-height: 1.1;
@@ -196,7 +206,7 @@
           <div class="cal-title" id="calTitle"></div>
           <button type="button" id="calNextBtn">›</button>
         </div>
-        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-grid-wrap"><div class="cal-grid" id="calGrid"></div></div>
       </div>
 
       <div class="side-col card">
@@ -206,6 +216,9 @@
           </button>
           <button type="button" id="typeTaskBtn">
             ✅ 할일<span class="type-sub">마감일 있는 작업</span>
+          </button>
+          <button type="button" id="typeVacationBtn">
+            🏖 휴가<span class="type-sub">연차·휴일</span>
           </button>
         </div>
         <label for="dateInput" id="dateLabel">날짜</label>
@@ -397,12 +410,15 @@ function renderCalendar() {
     const dStr = dateKey(y, m, d);
 
     const holidayName = KR_HOLIDAYS[dStr];
+    const dayItems = itemsByDate[dStr];
+    const isVacation = !!(dayItems && dayItems.some(x => x.type === "vacation"));
     const cell = document.createElement("div");
     cell.className = "cal-day"
       + (otherMonth ? " other-month" : "")
       + (dStr === today ? " today" : "")
       + (dStr === selectedDate ? " selected" : "")
-      + (holidayName ? " holiday" : "");
+      + (holidayName ? " holiday" : "")
+      + (isVacation ? " vacation" : "");
 
     const num = document.createElement("div");
     num.textContent = d;
@@ -415,16 +431,18 @@ function renderCalendar() {
       cell.appendChild(hEl);
     }
 
-    const dayItems = itemsByDate[dStr];
     if (dayItems && dayItems.length) {
-      const dots = document.createElement("div");
-      dots.className = "cal-dots";
-      [...new Set(dayItems.map(x => x.type))].forEach(t => {
-        const dot = document.createElement("span");
-        dot.className = "cal-dot" + (t === "task" ? " task" : "");
-        dots.appendChild(dot);
-      });
-      cell.appendChild(dots);
+      const dotTypes = [...new Set(dayItems.filter(x => x.type !== "vacation").map(x => x.type))];
+      if (dotTypes.length) {
+        const dots = document.createElement("div");
+        dots.className = "cal-dots";
+        dotTypes.forEach(t => {
+          const dot = document.createElement("span");
+          dot.className = "cal-dot" + (t === "task" ? " task" : "");
+          dots.appendChild(dot);
+        });
+        cell.appendChild(dots);
+      }
     }
     cell.addEventListener("click", () => selectDate(dStr));
     grid.appendChild(cell);
@@ -517,9 +535,12 @@ function renderItem(it, today) {
   if (it.type === "event") {
     badge.className = "badge";
     badge.textContent = "일정";
-  } else {
+  } else if (it.type === "task") {
     badge.className = "badge badge-task";
     badge.textContent = "할일";
+  } else {
+    badge.className = "badge badge-vacation";
+    badge.textContent = "휴가";
   }
   title.appendChild(badge);
   body.appendChild(title);
@@ -579,6 +600,11 @@ const TYPE_CONFIG = {
     dateLabel: "마감일",
     titlePlaceholder: "예: 보고서 작성, 제안서 제출, 강사 계약",
     memoPlaceholder: "세부 내용, 담당자 등"
+  },
+  vacation: {
+    dateLabel: "휴가 날짜",
+    titlePlaceholder: "예: 여름휴가, 연차",
+    memoPlaceholder: "메모 (선택)"
   }
 };
 
@@ -593,11 +619,13 @@ function setFormType(type) {
   currentType = type;
   document.getElementById("typeEventBtn").classList.toggle("active", type === "event");
   document.getElementById("typeTaskBtn").classList.toggle("active", type === "task");
+  document.getElementById("typeVacationBtn").classList.toggle("active", type === "vacation");
   applyTypeConfig(type);
 }
 
 document.getElementById("typeEventBtn").addEventListener("click", () => setFormType("event"));
 document.getElementById("typeTaskBtn").addEventListener("click", () => setFormType("task"));
+document.getElementById("typeVacationBtn").addEventListener("click", () => setFormType("vacation"));
 
 function startEdit(id) {
   const it = items.find(i => i.id === id);
