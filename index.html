@@ -120,6 +120,14 @@
   .cal-day.today { border-color: var(--accent); font-weight: 700; }
   .cal-day.selected { background: var(--accent); color: #fff; }
   .cal-day.selected:hover { background: var(--accent); }
+  .cal-day.holiday { color: #e11d48; }
+  .cal-day.holiday.other-month { color: #e11d48; opacity: 0.35; }
+  .cal-day.holiday.selected { color: #fff; }
+  .cal-holiday {
+    font-size: 9px; font-weight: 300; color: #e11d48; line-height: 1.1;
+    max-width: 95%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .cal-day.selected .cal-holiday { color: #fff; }
   .cal-dots { display: flex; gap: 3px; height: 7px; }
   .cal-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
   .cal-dot.task { background: #16a34a; }
@@ -239,6 +247,29 @@ let currentType = "event";
 let viewYear, viewMonth; // viewMonth is 0-indexed
 let selectedDate = null; // "YYYY-MM-DD" or null (null = show full chronological list)
 let editingId = null; // id of item currently being edited, or null
+
+// 대한민국 법정공휴일 2026 (출처: 한국천문연구원 특일 정보 기준)
+const KR_HOLIDAYS = {
+  "2026-01-01": "신정",
+  "2026-02-16": "설날연휴",
+  "2026-02-17": "설날",
+  "2026-02-18": "설날연휴",
+  "2026-03-01": "삼일절",
+  "2026-03-02": "대체공휴일",
+  "2026-05-05": "어린이날",
+  "2026-05-24": "부처님오신날",
+  "2026-05-25": "대체공휴일",
+  "2026-06-06": "현충일",
+  "2026-08-15": "광복절",
+  "2026-08-17": "대체공휴일",
+  "2026-09-24": "추석연휴",
+  "2026-09-25": "추석",
+  "2026-09-26": "추석연휴",
+  "2026-10-03": "개천절",
+  "2026-10-05": "대체공휴일",
+  "2026-10-09": "한글날",
+  "2026-12-25": "성탄절"
+};
 
 const authScreen = document.getElementById("authScreen");
 const mainScreen = document.getElementById("mainScreen");
@@ -364,15 +395,24 @@ function renderCalendar() {
     if (m > 11) { m = 0; y += 1; }
     const dStr = dateKey(y, m, d);
 
+    const holidayName = KR_HOLIDAYS[dStr];
     const cell = document.createElement("div");
     cell.className = "cal-day"
       + (otherMonth ? " other-month" : "")
       + (dStr === today ? " today" : "")
-      + (dStr === selectedDate ? " selected" : "");
+      + (dStr === selectedDate ? " selected" : "")
+      + (holidayName ? " holiday" : "");
 
     const num = document.createElement("div");
     num.textContent = d;
     cell.appendChild(num);
+
+    if (holidayName) {
+      const hEl = document.createElement("div");
+      hEl.className = "cal-holiday";
+      hEl.textContent = holidayName;
+      cell.appendChild(hEl);
+    }
 
     const dayItems = itemsByDate[dStr];
     if (dayItems && dayItems.length) {
