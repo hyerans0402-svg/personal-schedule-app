@@ -47,11 +47,11 @@
     color: var(--text);
     min-height: 100vh;
   }
-  .wrap { max-width: 1040px; margin: 0 auto; padding: 20px 16px 80px; }
-  .main-layout { display: flex; gap: 20px; align-items: flex-start; }
-  .calendar-col { flex: 1 1 640px; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 80px; }
+  .main-layout { display: flex; gap: 36px; align-items: flex-start; }
+  .calendar-col { flex: 1 1 760px; }
   .side-col { flex: 0 1 320px; min-width: 280px; }
-  @media (max-width: 760px) {
+  @media (max-width: 900px) {
     .main-layout { flex-direction: column; }
     .side-col { flex: 1 1 auto; width: 100%; }
   }
@@ -135,8 +135,8 @@
   .cal-dow.sat { color: var(--saturday); }
   .cal-day {
     position: relative; aspect-ratio: 1; display: flex; flex-direction: column;
-    align-items: center; justify-content: flex-start; padding-top: 8px; font-size: 17px; background: var(--card);
-    cursor: pointer; gap: 4px; border: 2px solid transparent;
+    align-items: stretch; justify-content: flex-start; padding: 7px 8px; font-size: 17px; background: var(--card);
+    cursor: pointer; border: 2px solid transparent;
   }
   .cal-day:hover { background: var(--accent-light); }
   .cal-day.other-month { color: var(--sub); opacity: 0.5; }
@@ -149,12 +149,14 @@
   .cal-day.sun:not(.other-month):not(.selected) { color: var(--danger); }
   .cal-day.holiday:not(.other-month):not(.selected) { color: var(--danger); }
   .cal-day.holiday.selected { color: #fff; }
+  .cal-day-top { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
+  .cal-daynum { flex-shrink: 0; }
   .cal-holiday {
     font-size: 9px; font-weight: 300; color: var(--danger); line-height: 1.1;
-    max-width: 95%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .cal-day.selected .cal-holiday { color: #fff; }
-  .cal-dots { display: flex; gap: 3px; height: 7px; }
+  .cal-dots { display: flex; gap: 3px; height: 7px; margin-top: auto; padding-top: 6px; }
   .cal-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
   .cal-dot.task { background: var(--task); }
   .cal-dot.ref { background: transparent; border: 1.5px solid var(--accent); width: 5px; height: 5px; }
@@ -444,16 +446,20 @@ function renderCalendar() {
       + (isVacation ? " vacation" : "")
       + (dow === 0 ? " sun" : dow === 6 ? " sat" : "");
 
-    const num = document.createElement("div");
+    const top = document.createElement("div");
+    top.className = "cal-day-top";
+    const num = document.createElement("span");
+    num.className = "cal-daynum";
     num.textContent = d;
-    cell.appendChild(num);
+    top.appendChild(num);
 
     if (holidayName) {
-      const hEl = document.createElement("div");
+      const hEl = document.createElement("span");
       hEl.className = "cal-holiday";
       hEl.textContent = holidayName;
-      cell.appendChild(hEl);
+      top.appendChild(hEl);
     }
+    cell.appendChild(top);
 
     if (dayItems && dayItems.length) {
       const dotVariants = new Set();
@@ -482,6 +488,7 @@ function selectDate(dStr) {
   selectedDate = (selectedDate === dStr) ? null : dStr;
   const [y, m] = dStr.split("-").map(Number);
   viewYear = y; viewMonth = m - 1;
+  document.getElementById("dateInput").value = dStr;
   renderAll();
 }
 
