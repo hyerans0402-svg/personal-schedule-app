@@ -6,27 +6,31 @@
 <title>개인 스케줄</title>
 <style>
   :root {
-    --bg: #f7f7f8;
-    --card: #ffffff;
-    --text: #1a1a1a;
-    --sub: #6b6b6b;
-    --border: #e5e5e5;
-    --accent: #2563eb;
-    --accent-light: #eff4ff;
-    --danger: #dc2626;
-    --done: #9ca3af;
+    --bg: #faf6ee;
+    --card: #fffdf8;
+    --text: #362f22;
+    --sub: #8a8270;
+    --border: #e6ddc9;
+    --accent: #6a8f5c;
+    --accent-light: #eaf0e2;
+    --task: #c9922e;
+    --task-light: #f7ecd6;
+    --danger: #bb5b3d;
+    --done: #a9a08a;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #15161a;
-      --card: #1f2024;
-      --text: #f0f0f0;
-      --sub: #9a9aa0;
-      --border: #303136;
-      --accent: #5b8cff;
-      --accent-light: #1c2436;
-      --danger: #f87171;
-      --done: #6b6b70;
+      --bg: #1c1e17;
+      --card: #262820;
+      --text: #f2eee2;
+      --sub: #b3ab97;
+      --border: #3a3c31;
+      --accent: #8bbb78;
+      --accent-light: #2a3324;
+      --task: #e0ab52;
+      --task-light: #3a2f18;
+      --danger: #e08363;
+      --done: #7c775f;
     }
   }
   * { box-sizing: border-box; }
@@ -101,10 +105,7 @@
   .side-col .type-toggle button { padding: 14px 8px; font-size: 16px; }
   .side-col .type-sub { font-size: 12px; }
   .side-col button.btn-primary { font-size: 17px; padding: 14px 20px; }
-  .badge.badge-task { background: #dcfce7; color: #16a34a; }
-  @media (prefers-color-scheme: dark) {
-    .badge.badge-task { background: #10371f; color: #4ade80; }
-  }
+  .badge.badge-task { background: var(--task-light); color: var(--task); }
   .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .cal-title { font-weight: 700; font-size: 20px; }
   .cal-header button { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; font-size: 16px; }
@@ -120,17 +121,17 @@
   .cal-day.today { border-color: var(--accent); font-weight: 700; }
   .cal-day.selected { background: var(--accent); color: #fff; }
   .cal-day.selected:hover { background: var(--accent); }
-  .cal-day.holiday { color: #e11d48; }
-  .cal-day.holiday.other-month { color: #e11d48; opacity: 0.35; }
+  .cal-day.holiday { color: var(--danger); }
+  .cal-day.holiday.other-month { color: var(--danger); opacity: 0.35; }
   .cal-day.holiday.selected { color: #fff; }
   .cal-holiday {
-    font-size: 9px; font-weight: 300; color: #e11d48; line-height: 1.1;
+    font-size: 9px; font-weight: 300; color: var(--danger); line-height: 1.1;
     max-width: 95%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .cal-day.selected .cal-holiday { color: #fff; }
   .cal-dots { display: flex; gap: 3px; height: 7px; }
   .cal-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
-  .cal-dot.task { background: #16a34a; }
+  .cal-dot.task { background: var(--task); }
   .cal-day.selected .cal-dot { background: #fff; }
   .list-filter-bar {
     display: flex; justify-content: space-between; align-items: center;
