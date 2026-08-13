@@ -49,11 +49,11 @@
   }
   .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 80px; }
   .main-layout { display: flex; gap: 36px; align-items: flex-start; }
-  .calendar-col { flex: 1 1 760px; }
-  .side-col { flex: 0 1 320px; min-width: 280px; }
+  .left-col { flex: 1 1 760px; min-width: 0; }
+  .side-col { flex: 0 0 320px; min-width: 280px; position: sticky; top: 20px; }
   @media (max-width: 900px) {
     .main-layout { flex-direction: column; }
-    .side-col { flex: 1 1 auto; width: 100%; }
+    .side-col { flex: 1 1 auto; width: 100%; position: static; }
   }
   h1 { font-size: 20px; margin: 8px 0 20px; }
   .card {
@@ -219,13 +219,26 @@
   <!-- 메인 화면 -->
   <div id="mainScreen" class="hidden">
     <div class="main-layout">
-      <div class="calendar-col card">
-        <div class="cal-header">
-          <button type="button" id="calPrevBtn">‹</button>
-          <div class="cal-title" id="calTitle"></div>
-          <button type="button" id="calNextBtn">›</button>
+      <div class="left-col">
+        <div class="calendar-col card">
+          <div class="cal-header">
+            <button type="button" id="calPrevBtn">‹</button>
+            <div class="cal-title" id="calTitle"></div>
+            <button type="button" id="calNextBtn">›</button>
+          </div>
+          <div class="cal-grid-wrap"><div class="cal-grid" id="calGrid"></div></div>
         </div>
-        <div class="cal-grid-wrap"><div class="cal-grid" id="calGrid"></div></div>
+
+        <div class="list-filter-bar hidden" id="listFilterBar">
+          <span id="listFilterLabel"></span>
+          <button class="btn-ghost" id="clearFilterBtn">전체보기</button>
+        </div>
+        <div id="listContainer"></div>
+
+        <div class="footer-link">
+          <button class="btn-ghost" id="refreshBtn">🔄 새로고침</button>
+          <button class="btn-ghost" id="logoutBtn">토큰 지우기</button>
+        </div>
       </div>
 
       <div class="side-col card">
@@ -256,17 +269,6 @@
         </div>
         <div class="status" id="mainStatus"></div>
       </div>
-    </div>
-
-    <div class="list-filter-bar hidden" id="listFilterBar">
-      <span id="listFilterLabel"></span>
-      <button class="btn-ghost" id="clearFilterBtn">전체보기</button>
-    </div>
-    <div id="listContainer"></div>
-
-    <div class="footer-link">
-      <button class="btn-ghost" id="refreshBtn">🔄 새로고침</button>
-      <button class="btn-ghost" id="logoutBtn">토큰 지우기</button>
     </div>
   </div>
 </div>
