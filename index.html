@@ -18,6 +18,7 @@
     --vacation: #a8695a;
     --vacation-light: #f2e2dc;
     --danger: #bb5b3d;
+    --holiday: #dc2626;
     --saturday: #3b6ea5;
     --mine: #6a8f5c;
     --mine-light: #eaf0e2;
@@ -37,6 +38,7 @@
       --vacation: #d68b78;
       --vacation-light: #3a2620;
       --danger: #e08363;
+      --holiday: #f87171;
       --saturday: #7fa8d9;
       --mine: #8bbb78;
       --mine-light: #2a3324;
@@ -154,15 +156,20 @@
   .cal-day.vacation.selected { background: var(--vacation); color: #fff; }
   .cal-day.sat:not(.other-month):not(.selected) { color: var(--saturday); }
   .cal-day.sun:not(.other-month):not(.selected) { color: var(--danger); }
-  .cal-day.holiday:not(.other-month):not(.selected) { color: var(--danger); }
+  .cal-day.holiday:not(.other-month):not(.selected) { color: var(--holiday); }
   .cal-day.holiday.selected { color: #fff; }
   .cal-day-top { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
   .cal-daynum { flex-shrink: 0; }
   .cal-holiday {
-    font-size: 9px; font-weight: 300; color: var(--danger); line-height: 1.1;
+    font-size: 9px; font-weight: 300; color: var(--holiday); line-height: 1.1;
     min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .cal-day.selected .cal-holiday { color: #fff; }
+  .cal-vacation-tag {
+    font-size: 9px; font-weight: 300; color: var(--vacation); line-height: 1.1;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .cal-day.selected .cal-vacation-tag { color: #fff; }
   .cal-dots { display: flex; gap: 4px; height: 10px; margin-top: 5px; }
   .cal-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--mine); }
   .cal-dot.task { background: var(--task); }
@@ -499,6 +506,12 @@ function renderCalendar() {
       hEl.className = "cal-holiday";
       hEl.textContent = holidayName;
       top.appendChild(hEl);
+    }
+    if (isVacation) {
+      const vEl = document.createElement("span");
+      vEl.className = "cal-vacation-tag";
+      vEl.textContent = "휴가";
+      top.appendChild(vEl);
     }
     cell.appendChild(top);
 
