@@ -301,6 +301,10 @@
         </div>
         <label for="dateInput" id="dateLabel">날짜</label>
         <input id="dateInput" type="date">
+        <div id="endDateGroup" class="hidden">
+          <label for="endDateInput">종료일</label>
+          <input id="endDateInput" type="date">
+        </div>
         <label for="titleInput">제목</label>
         <input id="titleInput" type="text" placeholder="예: 워크숍 준비">
         <label for="memoInput">메모 (선택)</label>
@@ -447,6 +451,20 @@ function pad2(n) { return String(n).padStart(2, "0"); }
 
 function dateKey(y, m, d) { return `${y}-${pad2(m + 1)}-${pad2(d)}`; }
 
+function dateRange(startStr, endStr) {
+  const out = [];
+  const start = new Date(startStr + "T00:00:00");
+  const end = new Date(endStr + "T00:00:00");
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    out.push(dateKey(d.getFullYear(), d.getMonth(), d.getDate()));
+  }
+  return out;
+}
+
+function itemSpan(it) {
+  return (it.type === "event" && it.endDate && it.endDate > it.date) ? it.endDate : it.date;
+}
+
 function renderCalendar() {
   document.getElementById("calTitle").textContent = `${viewYear}년 ${viewMonth + 1}월`;
   const grid = document.getElementById("calGrid");
@@ -462,7 +480,11 @@ function renderCalendar() {
   const itemsByDate = {};
   items.forEach(it => {
     if (it.type === "quicktask") return;
-    (itemsByDate[it.date] = itemsByDate[it.date] || []).push(it);
+    const endStr = itemSpan(it);
+    const days = endStr > it.date ? dateRange(it.date, endStr) : [it.date];
+    days.forEach(dStr => {
+      (itemsByDate[dStr] = itemsByDate[dStr] || []).push(it);
+    });
   });
 
   const startOffset = new Date(viewYear, viewMonth, 1).getDay();
@@ -563,7 +585,7 @@ function renderList() {
   if (selectedDate) {
     filterBar.classList.remove("hidden");
     filterLabel.innerHTML = `<b>${formatDateLabel(selectedDate, today)}</b>`;
-    sorted = scheduled.filter(it => it.date === selectedDate);
+    sorted = scheduled.filter(it => it.date <= selectedDate && itemSpan(it) >= selectedDate);
   } else {
     filterBar.classList.add("hidden");
     // 전체보기에서는 지난 참고용 일정, 완료된 할일은 숨겨서 남은 것만 보이게 함
@@ -646,6 +668,12 @@ function renderItem(it, today) {
   }
   title.appendChild(badge);
   body.appendChild(title);
+  if (it.type === "event" && it.endDate && it.endDate > it.date) {
+    const rangeEl = document.createElement("div");
+    rangeEl.className = "item-date";
+    rangeEl.textContent = `${it.date} ~ ${it.endDate}`;
+    body.appendChild(rangeEl);
+  }
   if (it.type === "task" && !it.done) {
     const ddayEl = document.createElement("div");
     ddayEl.className = "item-date";
@@ -759,7 +787,7 @@ document.getElementById("quickInput").addEventListener("keydown", (e) => {
 
 const TYPE_CONFIG = {
   event: {
-    dateLabel: "날짜",
+    dateLabel: "시작일",
     titlePlaceholder: "예: 전문가 자문회의, 연구단 워크숍",
     memoPlaceholder: "장소, 참석자 등"
   },
@@ -788,6 +816,11 @@ function setFormType(type) {
   document.getElementById("typeTaskBtn").classList.toggle("active", type === "task");
   document.getElementById("typeVacationBtn").classList.toggle("active", type === "vacation");
   document.getElementById("attendToggle").classList.toggle("hidden", type !== "event");
+  document.getElementById("endDateGroup").classList.toggle("hidden", type !== "event");
+  if (type === "event") {
+    const endInput = document.getElementById("endDateInput");
+    if (!endInput.value) endInput.value = document.getElementById("dateInput").value;
+  }
   applyTypeConfig(type);
 }
 
@@ -803,13 +836,22 @@ document.getElementById("typeVacationBtn").addEventListener("click", () => setFo
 document.getElementById("attendMeBtn").addEventListener("click", () => setAttending(true));
 document.getElementById("attendRefBtn").addEventListener("click", () => setAttending(false));
 
+document.getElementById("dateInput").addEventListener("change", () => {
+  const start = document.getElementById("dateInput").value;
+  const endInput = document.getElementById("endDateInput");
+  if (currentType === "event" && (!endInput.value || endInput.value < start)) {
+    endInput.value = start;
+  }
+});
+
 function startEdit(id) {
   const it = items.find(i => i.id === id);
   if (!it) return;
   editingId = id;
+  document.getElementById("dateInput").value = it.date;
+  document.getElementById("endDateInput").value = it.endDate || it.date;
   setFormType(it.type);
   if (it.type === "event") setAttending(it.attending !== false);
-  document.getElementById("dateInput").value = it.date;
   document.getElementById("titleInput").value = it.title;
   document.getElementById("memoInput").value = it.memo || "";
   document.getElementById("addBtn").textContent = "수정 완료";
@@ -822,6 +864,7 @@ function resetForm() {
   document.getElementById("titleInput").value = "";
   document.getElementById("memoInput").value = "";
   document.getElementById("dateInput").value = todayStr();
+  document.getElementById("endDateInput").value = todayStr();
   document.getElementById("addBtn").textContent = "추가하기";
   document.getElementById("cancelEditBtn").classList.add("hidden");
   setFormType("event");
@@ -839,19 +882,31 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     mainStatus.className = "status error";
     return;
   }
+  let endDate = date;
+  if (currentType === "event") {
+    endDate = document.getElementById("endDateInput").value || date;
+    if (endDate < date) {
+      mainStatus.textContent = "종료일은 시작일보다 빠를 수 없어요";
+      mainStatus.className = "status error";
+      return;
+    }
+  }
   const attending = currentType === "event" ? currentAttending : true;
   if (editingId) {
     const it = items.find(i => i.id === editingId);
     if (it) {
       it.date = date; it.title = title; it.memo = memo; it.type = currentType;
       it.attending = attending;
+      if (currentType === "event") it.endDate = endDate; else delete it.endDate;
     }
   } else {
-    items.push({
+    const newItem = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
       date, title, memo, type: currentType, done: false, attending,
       createdAt: new Date().toISOString()
-    });
+    };
+    if (currentType === "event") newItem.endDate = endDate;
+    items.push(newItem);
   }
   resetForm();
   renderAll();
