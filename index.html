@@ -99,6 +99,7 @@
   .row > * { flex: 1; }
   .date-row { margin-bottom: 4px; }
   .date-field { flex: 1; min-width: 0; }
+  input[readonly] { cursor: pointer; background: var(--accent-light); }
   .range-hint { font-size: 12px; color: var(--accent); margin: -2px 0 12px; }
   .range-hint.hidden { display: none; }
   .top-bar { display: flex; justify-content: space-between; align-items: baseline; }
@@ -175,6 +176,13 @@
     min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .cal-day.selected .cal-vacation-tag { color: #fff; }
+  .cal-bars { display: flex; flex-direction: column; gap: 3px; margin-top: 5px; }
+  .cal-bar { height: 7px; background: var(--mine); margin: 0 -8px; }
+  .cal-bar.bar-start { margin-left: 0; border-radius: 999px 0 0 999px; }
+  .cal-bar.bar-end { margin-right: 0; border-radius: 0 999px 999px 0; }
+  .cal-bar.bar-start.bar-end { margin: 0; border-radius: 999px; }
+  .cal-bar.ref { opacity: 0.45; }
+  .cal-day.selected .cal-bar { background: #fff; }
   .cal-dots { display: flex; gap: 4px; height: 10px; margin-top: 5px; }
   .cal-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--mine); }
   .cal-dot.task { background: var(--task); }
@@ -550,8 +558,27 @@ function renderCalendar() {
     cell.appendChild(top);
 
     if (dayItems && dayItems.length) {
+      const multiDay = dayItems.filter(x => x.type === "event" && x.endDate && x.endDate > x.date);
+      const singleDay = dayItems.filter(x => !(x.type === "event" && x.endDate && x.endDate > x.date));
+
+      if (multiDay.length) {
+        const bars = document.createElement("div");
+        bars.className = "cal-bars";
+        multiDay.forEach(it => {
+          const bar = document.createElement("div");
+          const isStart = (dStr === it.date) || (dow === 0);
+          const isEnd = (dStr === itemSpan(it)) || (dow === 6);
+          bar.className = "cal-bar"
+            + (isStart ? " bar-start" : "")
+            + (isEnd ? " bar-end" : "")
+            + (it.attending === false ? " ref" : "");
+          bars.appendChild(bar);
+        });
+        cell.appendChild(bars);
+      }
+
       const dotVariants = new Set();
-      dayItems.forEach(x => {
+      singleDay.forEach(x => {
         if (x.type === "vacation") return;
         if (x.type === "event") dotVariants.add(x.attending === false ? "event-ref" : "event-mine");
         else dotVariants.add(x.type);
@@ -861,9 +888,13 @@ function setFormType(type) {
   document.getElementById("typeVacationBtn").classList.toggle("active", type === "vacation");
   document.getElementById("attendToggle").classList.toggle("hidden", type !== "event");
   document.getElementById("endDateGroup").classList.toggle("hidden", type !== "event");
+  const dateInputEl = document.getElementById("dateInput");
+  const endInput = document.getElementById("endDateInput");
+  // 일정(event)은 브라우저 기본 달력 팝업 대신 페이지의 달력을 클릭해서 지정하도록 유도
+  dateInputEl.readOnly = (type === "event");
+  endInput.readOnly = true;
   if (type === "event") {
-    const endInput = document.getElementById("endDateInput");
-    if (!endInput.value) endInput.value = document.getElementById("dateInput").value;
+    if (!endInput.value) endInput.value = dateInputEl.value;
   }
   rangePickStart = null;
   updateRangeHint();
@@ -895,6 +926,13 @@ document.getElementById("endDateInput").addEventListener("change", () => {
   rangePickStart = null;
   updateRangeHint();
 });
+
+function scrollToCalendarIfEvent() {
+  if (currentType !== "event") return;
+  document.querySelector(".calendar-col").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+document.getElementById("dateInput").addEventListener("click", scrollToCalendarIfEvent);
+document.getElementById("endDateInput").addEventListener("click", scrollToCalendarIfEvent);
 
 function startEdit(id) {
   const it = items.find(i => i.id === id);
