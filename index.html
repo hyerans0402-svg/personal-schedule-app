@@ -188,6 +188,8 @@
   .cal-dot.ref { background: transparent; border: 2px solid var(--mine); width: 7px; height: 7px; }
   .cal-day.selected .cal-dot { background: #fff; }
   .cal-day.selected .cal-dot.ref { background: transparent; border-color: #fff; }
+  .cal-dot.dot-active { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--danger); }
+  .cal-day.selected .cal-dot.dot-active { box-shadow: 0 0 0 2px var(--accent), 0 0 0 4px #fff; }
   .list-filter-bar {
     display: flex; justify-content: space-between; align-items: center;
     margin: 4px 4px 12px; font-size: 13px; color: var(--sub);
@@ -358,6 +360,7 @@ let currentType = "event";
 let currentAttending = true; // true = 내 일정(직접 참여), false = 참고용(상급자 일정 등)
 let viewYear, viewMonth; // viewMonth is 0-indexed
 let selectedDate = null; // "YYYY-MM-DD" or null (null = show full chronological list)
+let selectedVariant = null; // "task" | "event-mine" | "event-ref" | null (dot-click sub-filter within selectedDate)
 let editingId = null; // id of item currently being edited, or null
 
 // 대한민국 법정공휴일 2026 (출처: 한국천문연구원 특일 정보 기준)
@@ -598,7 +601,14 @@ function renderCalendar() {
         dots.className = "cal-dots";
         dotVariants.forEach(v => {
           const dot = document.createElement("span");
-          dot.className = "cal-dot" + (v === "task" ? " task" : v === "event-ref" ? " ref" : "");
+          const isActiveVariant = dStr === selectedDate && v === selectedVariant;
+          dot.className = "cal-dot"
+            + (v === "task" ? " task" : v === "event-ref" ? " ref" : "")
+            + (isActiveVariant ? " dot-active" : "");
+          dot.addEventListener("click", (e) => {
+            e.stopPropagation();
+            selectDate(dStr, v);
+          });
           dots.appendChild(dot);
         });
         cell.appendChild(dots);
@@ -609,8 +619,17 @@ function renderCalendar() {
   }
 }
 
-function selectDate(dStr) {
-  selectedDate = (selectedDate === dStr) ? null : dStr;
+function selectDate(dStr, variant = null) {
+  if (variant) {
+    if (selectedDate === dStr && selectedVariant === variant) {
+      selectedDate = null; selectedVariant = null;
+    } else {
+      selectedDate = dStr; selectedVariant = variant;
+    }
+  } else {
+    selectedDate = (selectedDate === dStr) ? null : dStr;
+    selectedVariant = null;
+  }
   const [y, m] = dStr.split("-").map(Number);
   viewYear = y; viewMonth = m - 1;
   document.getElementById("dateInput").value = dStr;
@@ -619,6 +638,14 @@ function selectDate(dStr) {
     if (!endInput.value || endInput.value < dStr) endInput.value = dStr;
   }
   renderAll();
+}
+
+function matchesVariant(it, variant) {
+  if (!variant) return true;
+  if (variant === "task") return it.type === "task";
+  if (variant === "event-ref") return it.type === "event" && it.attending === false;
+  if (variant === "event-mine") return it.type === "event" && it.attending !== false;
+  return true;
 }
 
 function shiftMonth(delta) {
@@ -634,11 +661,15 @@ function renderList() {
   const today = todayStr();
   let sorted;
 
+  const VARIANT_LABELS = { task: "할일만", "event-mine": "일정만", "event-ref": "참고용만" };
   const scheduled = items.filter(it => it.type !== "quicktask");
   if (selectedDate) {
     filterBar.classList.remove("hidden");
-    filterLabel.innerHTML = `<b>${formatDateLabel(selectedDate, today)}</b>`;
-    sorted = scheduled.filter(it => it.date <= selectedDate && itemSpan(it) >= selectedDate);
+    const variantSuffix = selectedVariant ? ` · ${VARIANT_LABELS[selectedVariant]}` : "";
+    filterLabel.innerHTML = `<b>${formatDateLabel(selectedDate, today)}${variantSuffix}</b>`;
+    sorted = scheduled.filter(it =>
+      it.date <= selectedDate && itemSpan(it) >= selectedDate && matchesVariant(it, selectedVariant)
+    );
   } else {
     filterBar.classList.add("hidden");
     // 전체보기에서는 지난 참고용 일정, 완료된 할일은 숨겨서 남은 것만 보이게 함
@@ -1000,6 +1031,7 @@ document.getElementById("calPrevBtn").addEventListener("click", () => shiftMonth
 document.getElementById("calNextBtn").addEventListener("click", () => shiftMonth(1));
 document.getElementById("clearFilterBtn").addEventListener("click", () => {
   selectedDate = null;
+  selectedVariant = null;
   renderAll();
 });
 
