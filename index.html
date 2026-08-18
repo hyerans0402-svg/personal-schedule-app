@@ -487,8 +487,12 @@ function dateRange(startStr, endStr) {
   return out;
 }
 
+function supportsDateRange(type) {
+  return type === "event" || type === "vacation";
+}
+
 function itemSpan(it) {
-  return (it.type === "event" && it.endDate && it.endDate > it.date) ? it.endDate : it.date;
+  return (supportsDateRange(it.type) && it.endDate && it.endDate > it.date) ? it.endDate : it.date;
 }
 
 function renderCalendar() {
@@ -610,7 +614,7 @@ function selectDate(dStr) {
   const [y, m] = dStr.split("-").map(Number);
   viewYear = y; viewMonth = m - 1;
   document.getElementById("dateInput").value = dStr;
-  if (currentType === "event") {
+  if (supportsDateRange(currentType)) {
     const endInput = document.getElementById("endDateInput");
     if (!endInput.value || endInput.value < dStr) endInput.value = dStr;
   }
@@ -723,7 +727,7 @@ function renderItem(it, today) {
   }
   title.appendChild(badge);
   body.appendChild(title);
-  if (it.type === "event") {
+  if (supportsDateRange(it.type)) {
     const isMultiDay = it.endDate && it.endDate > it.date;
     const timeText = formatTimeRange(it);
     if (isMultiDay || timeText) {
@@ -859,7 +863,7 @@ const TYPE_CONFIG = {
     memoPlaceholder: "세부 내용, 담당자 등"
   },
   vacation: {
-    dateLabel: "휴가 날짜",
+    dateLabel: "시작일",
     titlePlaceholder: "예: 여름휴가, 연차",
     memoPlaceholder: "메모 (선택)"
   }
@@ -878,11 +882,11 @@ function setFormType(type) {
   document.getElementById("typeTaskBtn").classList.toggle("active", type === "task");
   document.getElementById("typeVacationBtn").classList.toggle("active", type === "vacation");
   document.getElementById("attendToggle").classList.toggle("hidden", type !== "event");
-  document.getElementById("endDateGroup").classList.toggle("hidden", type !== "event");
+  document.getElementById("endDateGroup").classList.toggle("hidden", !supportsDateRange(type));
   document.getElementById("timeGroup").classList.toggle("hidden", type !== "event");
   const dateInputEl = document.getElementById("dateInput");
   const endInput = document.getElementById("endDateInput");
-  if (type === "event") {
+  if (supportsDateRange(type)) {
     if (!endInput.value) endInput.value = dateInputEl.value;
   }
   applyTypeConfig(type);
@@ -903,7 +907,7 @@ document.getElementById("attendRefBtn").addEventListener("click", () => setAtten
 document.getElementById("dateInput").addEventListener("change", () => {
   const start = document.getElementById("dateInput").value;
   const endInput = document.getElementById("endDateInput");
-  if (currentType !== "event") return;
+  if (!supportsDateRange(currentType)) return;
   if (!endInput.value || endInput.value < start) {
     endInput.value = start;
   }
@@ -952,7 +956,7 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     return;
   }
   let endDate = date;
-  if (currentType === "event") {
+  if (supportsDateRange(currentType)) {
     endDate = document.getElementById("endDateInput").value || date;
     if (endDate < date) {
       mainStatus.textContent = "종료일은 시작일보다 빠를 수 없어요";
@@ -968,11 +972,11 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     if (it) {
       it.date = date; it.title = title; it.memo = memo; it.type = currentType;
       it.attending = attending;
+      if (supportsDateRange(currentType)) it.endDate = endDate; else delete it.endDate;
       if (currentType === "event") {
-        it.endDate = endDate;
         it.startTime = startTime; it.endTime = endTime;
       } else {
-        delete it.endDate; delete it.startTime; delete it.endTime;
+        delete it.startTime; delete it.endTime;
       }
     }
   } else {
@@ -981,8 +985,8 @@ document.getElementById("addBtn").addEventListener("click", async () => {
       date, title, memo, type: currentType, done: false, attending,
       createdAt: new Date().toISOString()
     };
+    if (supportsDateRange(currentType)) newItem.endDate = endDate;
     if (currentType === "event") {
-      newItem.endDate = endDate;
       newItem.startTime = startTime; newItem.endTime = endTime;
     }
     items.push(newItem);
