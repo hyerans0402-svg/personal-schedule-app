@@ -645,7 +645,7 @@ function updateRangeHint() {
   } else {
     const s = document.getElementById("dateInput").value;
     const e = document.getElementById("endDateInput").value;
-    hint.textContent = (s && e) ? `📅 ${s} ~ ${e} (달력 클릭으로 다시 지정 가능)` : "📅 달력에서 시작일 클릭 → 종료일 클릭";
+    hint.textContent = (s && e) ? `📅 ${s} ~ ${e} (직접 입력하거나 달력 클릭으로 변경 가능)` : "📅 날짜를 직접 입력하거나, 달력에서 시작일 → 종료일 순으로 클릭하세요";
   }
 }
 
@@ -914,9 +914,6 @@ function setFormType(type) {
   document.getElementById("timeGroup").classList.toggle("hidden", type !== "event");
   const dateInputEl = document.getElementById("dateInput");
   const endInput = document.getElementById("endDateInput");
-  // 일정(event)은 브라우저 기본 달력 팝업 대신 페이지의 달력을 클릭해서 지정하도록 유도
-  dateInputEl.readOnly = (type === "event");
-  endInput.readOnly = true;
   if (type === "event") {
     if (!endInput.value) endInput.value = dateInputEl.value;
   }
@@ -950,13 +947,6 @@ document.getElementById("endDateInput").addEventListener("change", () => {
   rangePickStart = null;
   updateRangeHint();
 });
-
-function scrollToCalendarIfEvent() {
-  if (currentType !== "event") return;
-  document.querySelector(".calendar-col").scrollIntoView({ behavior: "smooth", block: "center" });
-}
-document.getElementById("dateInput").addEventListener("click", scrollToCalendarIfEvent);
-document.getElementById("endDateInput").addEventListener("click", scrollToCalendarIfEvent);
 
 function startEdit(id) {
   const it = items.find(i => i.id === id);
