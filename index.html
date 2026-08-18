@@ -323,6 +323,16 @@
           </div>
         </div>
         <div class="range-hint hidden" id="rangeHint">📅 달력에서 시작일 클릭 → 종료일 클릭</div>
+        <div class="row date-row hidden" id="timeGroup">
+          <div class="date-field">
+            <label for="startTimeInput">시작 시간</label>
+            <input id="startTimeInput" type="time">
+          </div>
+          <div class="date-field">
+            <label for="endTimeInput">종료 시간</label>
+            <input id="endTimeInput" type="time">
+          </div>
+        </div>
         <label for="titleInput">제목</label>
         <input id="titleInput" type="text" placeholder="예: 워크숍 준비">
         <label for="memoInput">메모 (선택)</label>
@@ -706,6 +716,12 @@ function dDayText(dateStr, today) {
   return `마감까지 ${diffDays}일`;
 }
 
+function formatTimeRange(it) {
+  if (!it.startTime && !it.endTime) return "";
+  if (it.startTime && it.endTime) return `${it.startTime}~${it.endTime}`;
+  return it.startTime || it.endTime;
+}
+
 function renderItem(it, today) {
   const div = document.createElement("div");
   const overdue = it.type === "task" && !it.done && it.date < today;
@@ -739,11 +755,18 @@ function renderItem(it, today) {
   }
   title.appendChild(badge);
   body.appendChild(title);
-  if (it.type === "event" && it.endDate && it.endDate > it.date) {
-    const rangeEl = document.createElement("div");
-    rangeEl.className = "item-date";
-    rangeEl.textContent = `${it.date} ~ ${it.endDate}`;
-    body.appendChild(rangeEl);
+  if (it.type === "event") {
+    const isMultiDay = it.endDate && it.endDate > it.date;
+    const timeText = formatTimeRange(it);
+    if (isMultiDay || timeText) {
+      const rangeEl = document.createElement("div");
+      rangeEl.className = "item-date";
+      rangeEl.textContent = [
+        isMultiDay ? `${it.date} ~ ${it.endDate}` : "",
+        timeText
+      ].filter(Boolean).join(" · ");
+      body.appendChild(rangeEl);
+    }
   }
   if (it.type === "task" && !it.done) {
     const ddayEl = document.createElement("div");
@@ -888,6 +911,7 @@ function setFormType(type) {
   document.getElementById("typeVacationBtn").classList.toggle("active", type === "vacation");
   document.getElementById("attendToggle").classList.toggle("hidden", type !== "event");
   document.getElementById("endDateGroup").classList.toggle("hidden", type !== "event");
+  document.getElementById("timeGroup").classList.toggle("hidden", type !== "event");
   const dateInputEl = document.getElementById("dateInput");
   const endInput = document.getElementById("endDateInput");
   // 일정(event)은 브라우저 기본 달력 팝업 대신 페이지의 달력을 클릭해서 지정하도록 유도
@@ -940,6 +964,8 @@ function startEdit(id) {
   editingId = id;
   document.getElementById("dateInput").value = it.date;
   document.getElementById("endDateInput").value = it.endDate || it.date;
+  document.getElementById("startTimeInput").value = it.startTime || "";
+  document.getElementById("endTimeInput").value = it.endTime || "";
   setFormType(it.type);
   if (it.type === "event") setAttending(it.attending !== false);
   document.getElementById("titleInput").value = it.title;
@@ -955,6 +981,8 @@ function resetForm() {
   document.getElementById("memoInput").value = "";
   document.getElementById("dateInput").value = todayStr();
   document.getElementById("endDateInput").value = todayStr();
+  document.getElementById("startTimeInput").value = "";
+  document.getElementById("endTimeInput").value = "";
   document.getElementById("addBtn").textContent = "추가하기";
   document.getElementById("cancelEditBtn").classList.add("hidden");
   setFormType("event");
@@ -982,12 +1010,19 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     }
   }
   const attending = currentType === "event" ? currentAttending : true;
+  const startTime = currentType === "event" ? document.getElementById("startTimeInput").value : "";
+  const endTime = currentType === "event" ? document.getElementById("endTimeInput").value : "";
   if (editingId) {
     const it = items.find(i => i.id === editingId);
     if (it) {
       it.date = date; it.title = title; it.memo = memo; it.type = currentType;
       it.attending = attending;
-      if (currentType === "event") it.endDate = endDate; else delete it.endDate;
+      if (currentType === "event") {
+        it.endDate = endDate;
+        it.startTime = startTime; it.endTime = endTime;
+      } else {
+        delete it.endDate; delete it.startTime; delete it.endTime;
+      }
     }
   } else {
     const newItem = {
@@ -995,7 +1030,10 @@ document.getElementById("addBtn").addEventListener("click", async () => {
       date, title, memo, type: currentType, done: false, attending,
       createdAt: new Date().toISOString()
     };
-    if (currentType === "event") newItem.endDate = endDate;
+    if (currentType === "event") {
+      newItem.endDate = endDate;
+      newItem.startTime = startTime; newItem.endTime = endTime;
+    }
     items.push(newItem);
   }
   resetForm();
