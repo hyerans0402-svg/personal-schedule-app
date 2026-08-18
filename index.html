@@ -907,10 +907,6 @@ document.getElementById("dateInput").addEventListener("change", () => {
   if (!endInput.value || endInput.value < start) {
     endInput.value = start;
   }
-  // 시작일 선택이 끝나면 자연스럽게 종료일 선택으로 이어지도록 자동으로 열어줌
-  if (typeof endInput.showPicker === "function") {
-    try { endInput.showPicker(); } catch (e) { /* 브라우저가 허용하지 않으면 조용히 무시 */ }
-  }
 });
 
 function startEdit(id) {
@@ -1033,7 +1029,7 @@ document.getElementById("saveTokenBtn").addEventListener("click", async () => {
 // 초기화
 document.getElementById("dateInput") && (document.getElementById("dateInput").value = todayStr());
 document.getElementById("endDateInput") && (document.getElementById("endDateInput").value = todayStr());
-applyTypeConfig("event");
+setFormType("event");
 const now = new Date();
 viewYear = now.getFullYear();
 viewMonth = now.getMonth();
