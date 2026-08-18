@@ -157,7 +157,6 @@
   .cal-day.today { border-color: var(--accent); font-weight: 700; z-index: 1; }
   .cal-day.selected { background: var(--accent); color: #fff; }
   .cal-day.selected:hover { background: var(--accent); }
-  .cal-day.range-start { border-color: var(--mine); border-style: dashed; }
   .cal-day.vacation { background: var(--vacation-light); }
   .cal-day.vacation.selected { background: var(--vacation); color: #fff; }
   .cal-day.sat:not(.other-month):not(.selected) { color: var(--saturday); }
@@ -322,7 +321,6 @@
             <input id="endDateInput" type="date">
           </div>
         </div>
-        <div class="range-hint hidden" id="rangeHint">📅 달력에서 시작일 클릭 → 종료일 클릭</div>
         <div class="row date-row hidden" id="timeGroup">
           <div class="date-field">
             <label for="startTimeInput">시작 시간</label>
@@ -358,7 +356,6 @@ let currentSha = null;
 let items = [];
 let currentType = "event";
 let currentAttending = true; // true = 내 일정(직접 참여), false = 참고용(상급자 일정 등)
-let rangePickStart = null; // 일정 등록 시 달력 클릭으로 시작일을 먼저 찍어둔 상태(다음 클릭이 종료일)
 let viewYear, viewMonth; // viewMonth is 0-indexed
 let selectedDate = null; // "YYYY-MM-DD" or null (null = show full chronological list)
 let editingId = null; // id of item currently being edited, or null
@@ -543,8 +540,7 @@ function renderCalendar() {
       + (dStr === selectedDate ? " selected" : "")
       + (holidayName ? " holiday" : "")
       + (isVacation ? " vacation" : "")
-      + (dow === 0 ? " sun" : dow === 6 ? " sat" : "")
-      + (dStr === rangePickStart ? " range-start" : "");
+      + (dow === 0 ? " sun" : dow === 6 ? " sat" : "");
 
     const top = document.createElement("div");
     top.className = "cal-day-top";
@@ -613,40 +609,12 @@ function selectDate(dStr) {
   selectedDate = (selectedDate === dStr) ? null : dStr;
   const [y, m] = dStr.split("-").map(Number);
   viewYear = y; viewMonth = m - 1;
-
+  document.getElementById("dateInput").value = dStr;
   if (currentType === "event") {
-    if (!rangePickStart) {
-      rangePickStart = dStr;
-      document.getElementById("dateInput").value = dStr;
-      document.getElementById("endDateInput").value = dStr;
-    } else {
-      let s = rangePickStart, e = dStr;
-      if (e < s) { const tmp = s; s = e; e = tmp; }
-      document.getElementById("dateInput").value = s;
-      document.getElementById("endDateInput").value = e;
-      rangePickStart = null;
-    }
-    updateRangeHint();
-  } else {
-    document.getElementById("dateInput").value = dStr;
+    const endInput = document.getElementById("endDateInput");
+    if (!endInput.value || endInput.value < dStr) endInput.value = dStr;
   }
   renderAll();
-}
-
-function updateRangeHint() {
-  const hint = document.getElementById("rangeHint");
-  if (currentType !== "event") {
-    hint.classList.add("hidden");
-    return;
-  }
-  hint.classList.remove("hidden");
-  if (rangePickStart) {
-    hint.textContent = `📅 시작일 ${rangePickStart} 선택됨 → 달력에서 종료일 클릭`;
-  } else {
-    const s = document.getElementById("dateInput").value;
-    const e = document.getElementById("endDateInput").value;
-    hint.textContent = (s && e) ? `📅 ${s} ~ ${e} (직접 입력하거나 달력 클릭으로 변경 가능)` : "📅 날짜를 직접 입력하거나, 달력에서 시작일 → 종료일 순으로 클릭하세요";
-  }
 }
 
 function shiftMonth(delta) {
@@ -917,8 +885,6 @@ function setFormType(type) {
   if (type === "event") {
     if (!endInput.value) endInput.value = dateInputEl.value;
   }
-  rangePickStart = null;
-  updateRangeHint();
   applyTypeConfig(type);
 }
 
@@ -937,15 +903,14 @@ document.getElementById("attendRefBtn").addEventListener("click", () => setAtten
 document.getElementById("dateInput").addEventListener("change", () => {
   const start = document.getElementById("dateInput").value;
   const endInput = document.getElementById("endDateInput");
-  if (currentType === "event" && (!endInput.value || endInput.value < start)) {
+  if (currentType !== "event") return;
+  if (!endInput.value || endInput.value < start) {
     endInput.value = start;
   }
-  rangePickStart = null;
-  updateRangeHint();
-});
-document.getElementById("endDateInput").addEventListener("change", () => {
-  rangePickStart = null;
-  updateRangeHint();
+  // 시작일 선택이 끝나면 자연스럽게 종료일 선택으로 이어지도록 자동으로 열어줌
+  if (typeof endInput.showPicker === "function") {
+    try { endInput.showPicker(); } catch (e) { /* 브라우저가 허용하지 않으면 조용히 무시 */ }
+  }
 });
 
 function startEdit(id) {
@@ -1069,7 +1034,6 @@ document.getElementById("saveTokenBtn").addEventListener("click", async () => {
 document.getElementById("dateInput") && (document.getElementById("dateInput").value = todayStr());
 document.getElementById("endDateInput") && (document.getElementById("endDateInput").value = todayStr());
 applyTypeConfig("event");
-updateRangeHint();
 const now = new Date();
 viewYear = now.getFullYear();
 viewMonth = now.getMonth();
