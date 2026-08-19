@@ -184,7 +184,7 @@
   .cal-bar.bar-start.bar-end { margin: 0; border-radius: 999px; }
   .cal-bar.ref { opacity: 0.45; }
   .cal-day.selected .cal-bar { background: #fff; }
-  .cal-dots { display: flex; gap: 4px; height: 10px; margin-top: 5px; }
+  .cal-dots { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
   .cal-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--mine); }
   .cal-dot.task { background: var(--task); }
   .cal-dot.ref { background: var(--ref-green); }
@@ -591,16 +591,12 @@ function renderCalendar() {
         cell.appendChild(bars);
       }
 
-      const dotVariants = new Set();
-      singleDay.forEach(x => {
-        if (x.type === "vacation") return;
-        if (x.type === "event") dotVariants.add(x.attending === false ? "event-ref" : "event-mine");
-        else dotVariants.add(x.type);
-      });
-      if (dotVariants.size) {
+      const dotItems = singleDay.filter(x => x.type !== "vacation");
+      if (dotItems.length) {
         const dots = document.createElement("div");
         dots.className = "cal-dots";
-        dotVariants.forEach(v => {
+        dotItems.forEach(x => {
+          const v = x.type === "event" ? (x.attending === false ? "event-ref" : "event-mine") : x.type;
           const dot = document.createElement("span");
           const isActiveVariant = dStr === selectedDate && v === selectedVariant;
           dot.className = "cal-dot"
