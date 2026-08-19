@@ -22,6 +22,7 @@
     --saturday: #3b6ea5;
     --mine: #6a8f5c;
     --mine-light: #eaf0e2;
+    --ref-green: #9acd32;
     --done: #a9a08a;
   }
   @media (prefers-color-scheme: dark) {
@@ -42,6 +43,7 @@
       --saturday: #7fa8d9;
       --mine: #8bbb78;
       --mine-light: #2a3324;
+      --ref-green: #b6e05a;
       --done: #7c775f;
     }
   }
@@ -185,9 +187,8 @@
   .cal-dots { display: flex; gap: 4px; height: 10px; margin-top: 5px; }
   .cal-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--mine); }
   .cal-dot.task { background: var(--task); }
-  .cal-dot.ref { background: transparent; border: 2px solid var(--mine); width: 7px; height: 7px; }
+  .cal-dot.ref { background: var(--ref-green); }
   .cal-day.selected .cal-dot { background: #fff; }
-  .cal-day.selected .cal-dot.ref { background: transparent; border-color: #fff; }
   .cal-dot.dot-active { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--danger); }
   .cal-day.selected .cal-dot.dot-active { box-shadow: 0 0 0 2px var(--accent), 0 0 0 4px #fff; }
   .list-filter-bar {
