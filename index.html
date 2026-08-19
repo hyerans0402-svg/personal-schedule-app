@@ -947,8 +947,8 @@ function startEdit(id) {
   editingId = id;
   document.getElementById("dateInput").value = it.date;
   document.getElementById("endDateInput").value = it.endDate || it.date;
-  document.getElementById("startTimeInput").value = it.startTime || "";
-  document.getElementById("endTimeInput").value = it.endTime || "";
+  document.getElementById("startTimeInput").value = it.startTime || "00:00";
+  document.getElementById("endTimeInput").value = it.endTime || "00:00";
   setFormType(it.type);
   if (it.type === "event") setAttending(it.attending !== false);
   document.getElementById("titleInput").value = it.title;
@@ -964,8 +964,8 @@ function resetForm() {
   document.getElementById("memoInput").value = "";
   document.getElementById("dateInput").value = todayStr();
   document.getElementById("endDateInput").value = todayStr();
-  document.getElementById("startTimeInput").value = "";
-  document.getElementById("endTimeInput").value = "";
+  document.getElementById("startTimeInput").value = "00:00";
+  document.getElementById("endTimeInput").value = "00:00";
   document.getElementById("addBtn").textContent = "추가하기";
   document.getElementById("cancelEditBtn").classList.add("hidden");
   setFormType("event");
@@ -1062,6 +1062,8 @@ document.getElementById("saveTokenBtn").addEventListener("click", async () => {
 // 초기화
 document.getElementById("dateInput") && (document.getElementById("dateInput").value = todayStr());
 document.getElementById("endDateInput") && (document.getElementById("endDateInput").value = todayStr());
+document.getElementById("startTimeInput") && (document.getElementById("startTimeInput").value = "00:00");
+document.getElementById("endTimeInput") && (document.getElementById("endTimeInput").value = "00:00");
 setFormType("event");
 const now = new Date();
 viewYear = now.getFullYear();
