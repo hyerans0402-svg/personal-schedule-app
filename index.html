@@ -734,38 +734,65 @@ function formatTimeRange(it) {
 }
 
 // 공문/메모 형태의 텍스트에서 일시·장소·내용을 뽑아내는 간단한 규칙 기반 파서
-// "일시:", "장소:", "내용:" 라벨(괄호·전각공백 등 변형 허용)을 기준으로 인식
+// "일시:", "교육 기간:", "장소:", "내용:", "교육명:" 등 다양한 라벨 표현(괄호·전각공백·번호매김 변형 허용)을 인식
+function extractDateExpr(str, defaultYear) {
+  const m = str.match(/(?:(\d{4})\s*[년.\-]\s*)?(\d{1,2})\s*[월.\-]\s*(\d{1,2})\s*일?/);
+  if (!m) return null;
+  const y = m[1] || defaultYear;
+  return `${y}-${String(m[2]).padStart(2, "0")}-${String(m[3]).padStart(2, "0")}`;
+}
+
 function parseFreeText(text) {
-  const lines = text.split(/\r?\n/).map(l => l.replace(/^[-*•◦\s]+/, "").trim()).filter(Boolean);
-  const result = { date: "", startTime: "", endTime: "", location: "", title: "" };
+  const lines = text.split(/\r?\n/)
+    .map(l => l.replace(/^[-*•◦]+\s*/, "").replace(/^\d+[.\)]\s*/, "").trim())
+    .filter(Boolean);
+  const result = { date: "", endDate: "", startTime: "", endTime: "", location: "", title: "" };
+  const defaultYear = String(new Date(todayStr()).getFullYear());
   let mode = null;
   const contentLines = [];
   const locationLines = [];
 
+  const DATE_LABEL = /(일\s*시|날\s*짜|기\s*간|교\s*육\s*기\s*간|행\s*사\s*기\s*간|개\s*최\s*일\s*시|행\s*사\s*일\s*자)\s*[:\)）]\s*(.*)/;
+  const PLACE_LABEL = /(장\s*소|개\s*최\s*장\s*소)\s*[:\)）]\s*(.*)/;
+  const CONTENT_LABEL = /(내\s*용|제\s*목|교\s*육\s*명|행\s*사\s*명|주\s*제|안\s*건)\s*[:\)）]\s*(.*)/;
+
   for (const line of lines) {
-    const dateMatch = line.match(/일\s*시\s*[:\)）]\s*(.*)/);
-    const placeMatch = line.match(/장\s*소\s*[:\)）]\s*(.*)/);
-    const contentMatch = line.match(/내\s*용\s*[:\)）]\s*(.*)/);
+    const dateMatch = line.match(DATE_LABEL);
+    const placeMatch = line.match(PLACE_LABEL);
+    const contentMatch = line.match(CONTENT_LABEL);
 
     if (dateMatch) {
       mode = null;
-      const dt = dateMatch[1];
-      const dm = dt.match(/(\d{4})\s*[년.\-]\s*(\d{1,2})\s*[월.\-]\s*(\d{1,2})\s*일?/);
-      if (dm) result.date = `${dm[1]}-${dm[2].padStart(2, "0")}-${dm[3].padStart(2, "0")}`;
-      const tm = dt.match(/(\d{1,2})\s*:\s*(\d{2})\s*[~\-]\s*(\d{1,2})\s*:\s*(\d{2})/);
-      if (tm) {
-        result.startTime = `${tm[1].padStart(2, "0")}:${tm[2]}`;
-        result.endTime = `${tm[3].padStart(2, "0")}:${tm[4]}`;
-      } else {
-        const tm2 = dt.match(/(\d{1,2})\s*:\s*(\d{2})/);
-        if (tm2) result.startTime = `${tm2[1].padStart(2, "0")}:${tm2[2]}`;
+      const dt = dateMatch[2];
+      const rangeParts = dt.split(/[~∼]/);
+      let isRange = false;
+      if (rangeParts.length >= 2) {
+        const d1 = extractDateExpr(rangeParts[0], defaultYear);
+        const d2 = extractDateExpr(rangeParts[1], defaultYear);
+        if (d1 && d2) {
+          result.date = d1;
+          result.endDate = d2;
+          isRange = true;
+        }
+      }
+      if (!isRange) {
+        const d1 = extractDateExpr(dt, defaultYear);
+        if (d1) result.date = d1;
+        const tm = dt.match(/(\d{1,2})\s*:\s*(\d{2})\s*[~\-∼]\s*(\d{1,2})\s*:\s*(\d{2})/);
+        if (tm) {
+          result.startTime = `${tm[1].padStart(2, "0")}:${tm[2]}`;
+          result.endTime = `${tm[3].padStart(2, "0")}:${tm[4]}`;
+        } else {
+          const tm2 = dt.match(/(\d{1,2})\s*:\s*(\d{2})/);
+          if (tm2) result.startTime = `${tm2[1].padStart(2, "0")}:${tm2[2]}`;
+        }
       }
     } else if (placeMatch) {
       mode = "location";
-      if (placeMatch[1]) locationLines.push(placeMatch[1].trim());
+      if (placeMatch[2]) locationLines.push(placeMatch[2].trim());
     } else if (contentMatch) {
       mode = "content";
-      if (contentMatch[1]) contentLines.push(contentMatch[1].trim());
+      if (contentMatch[2]) contentLines.push(contentMatch[2].trim());
     } else if (mode === "content") {
       contentLines.push(line);
     } else if (mode === "location") {
@@ -1093,7 +1120,7 @@ document.getElementById("pasteParseBtn").addEventListener("click", () => {
   setFormType("event");
   if (parsed.date) {
     document.getElementById("dateInput").value = parsed.date;
-    document.getElementById("endDateInput").value = parsed.date;
+    document.getElementById("endDateInput").value = parsed.endDate || parsed.date;
   }
   document.getElementById("startTimeInput").value = parsed.startTime || "00:00";
   document.getElementById("endTimeInput").value = parsed.endTime || "00:00";
