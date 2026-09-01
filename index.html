@@ -116,6 +116,10 @@
   #typeTaskBtn.active { background: var(--task-light); color: var(--task); border-color: var(--task); }
   #typeVacationBtn.active { background: var(--vacation-light); color: var(--vacation); border-color: var(--vacation); }
   .type-sub { font-size: 11px; font-weight: 400; opacity: 0.75; }
+  .paste-box { background: var(--mine-light); border: 1px dashed var(--mine); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+  .paste-box label { font-size: 12px; color: var(--mine); font-weight: 600; margin-bottom: 6px; }
+  .paste-box textarea { min-height: 90px; font-size: 12px; margin-bottom: 8px; }
+  .paste-divider { text-align: center; font-size: 11px; color: var(--sub); margin: 4px 0 14px; }
   .attend-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
   .attend-toggle.hidden { display: none; }
   .attend-toggle button {
@@ -299,6 +303,13 @@
       </div>
 
       <div class="side-col card">
+        <div class="paste-box">
+          <label for="pasteInput">✏️ 공문/메모 붙여넣기 (일시·장소·내용 자동 인식)</label>
+          <textarea id="pasteInput" placeholder="예:&#10;-일시: 2026년 9월 4일 (금), 14:00~&#10;-장소: 애트3 6호 회의실(대전역)&#10;-내용: 논리모형 확정"></textarea>
+          <button class="btn-primary" id="pasteParseBtn">자동 등록</button>
+          <div class="status" id="pasteStatus"></div>
+        </div>
+        <div class="paste-divider">또는 직접 입력</div>
         <div class="type-toggle">
           <button type="button" id="typeEventBtn" class="active">
             📌 일정<span class="type-sub">회의·행사</span>
@@ -722,6 +733,51 @@ function formatTimeRange(it) {
   return it.startTime || it.endTime;
 }
 
+// 공문/메모 형태의 텍스트에서 일시·장소·내용을 뽑아내는 간단한 규칙 기반 파서
+// "일시:", "장소:", "내용:" 라벨(괄호·전각공백 등 변형 허용)을 기준으로 인식
+function parseFreeText(text) {
+  const lines = text.split(/\r?\n/).map(l => l.replace(/^[-*•◦\s]+/, "").trim()).filter(Boolean);
+  const result = { date: "", startTime: "", endTime: "", location: "", title: "" };
+  let mode = null;
+  const contentLines = [];
+  const locationLines = [];
+
+  for (const line of lines) {
+    const dateMatch = line.match(/일\s*시\s*[:\)）]\s*(.*)/);
+    const placeMatch = line.match(/장\s*소\s*[:\)）]\s*(.*)/);
+    const contentMatch = line.match(/내\s*용\s*[:\)）]\s*(.*)/);
+
+    if (dateMatch) {
+      mode = null;
+      const dt = dateMatch[1];
+      const dm = dt.match(/(\d{4})\s*[년.\-]\s*(\d{1,2})\s*[월.\-]\s*(\d{1,2})\s*일?/);
+      if (dm) result.date = `${dm[1]}-${dm[2].padStart(2, "0")}-${dm[3].padStart(2, "0")}`;
+      const tm = dt.match(/(\d{1,2})\s*:\s*(\d{2})\s*[~\-]\s*(\d{1,2})\s*:\s*(\d{2})/);
+      if (tm) {
+        result.startTime = `${tm[1].padStart(2, "0")}:${tm[2]}`;
+        result.endTime = `${tm[3].padStart(2, "0")}:${tm[4]}`;
+      } else {
+        const tm2 = dt.match(/(\d{1,2})\s*:\s*(\d{2})/);
+        if (tm2) result.startTime = `${tm2[1].padStart(2, "0")}:${tm2[2]}`;
+      }
+    } else if (placeMatch) {
+      mode = "location";
+      if (placeMatch[1]) locationLines.push(placeMatch[1].trim());
+    } else if (contentMatch) {
+      mode = "content";
+      if (contentMatch[1]) contentLines.push(contentMatch[1].trim());
+    } else if (mode === "content") {
+      contentLines.push(line);
+    } else if (mode === "location") {
+      locationLines.push(line);
+    }
+  }
+
+  result.title = contentLines.join(" ").trim();
+  result.location = locationLines.join(" ").trim();
+  return result;
+}
+
 function renderItem(it, today) {
   const div = document.createElement("div");
   const overdue = it.type === "task" && !it.done && it.date < today;
@@ -1022,6 +1078,38 @@ document.getElementById("addBtn").addEventListener("click", async () => {
   resetForm();
   renderAll();
   await saveData();
+});
+
+document.getElementById("pasteParseBtn").addEventListener("click", () => {
+  const pasteStatus = document.getElementById("pasteStatus");
+  const raw = document.getElementById("pasteInput").value.trim();
+  if (!raw) {
+    pasteStatus.textContent = "붙여넣을 내용이 없어요";
+    pasteStatus.className = "status error";
+    return;
+  }
+  const parsed = parseFreeText(raw);
+
+  setFormType("event");
+  if (parsed.date) {
+    document.getElementById("dateInput").value = parsed.date;
+    document.getElementById("endDateInput").value = parsed.date;
+  }
+  document.getElementById("startTimeInput").value = parsed.startTime || "00:00";
+  document.getElementById("endTimeInput").value = parsed.endTime || "00:00";
+  document.getElementById("titleInput").value = parsed.title || raw.split(/\r?\n/)[0].trim();
+  document.getElementById("memoInput").value = parsed.location || "";
+
+  if (parsed.date && (parsed.title || raw)) {
+    document.getElementById("pasteInput").value = "";
+    document.getElementById("addBtn").click();
+    pasteStatus.textContent = "";
+    mainStatus.textContent = "자동 등록 완료!";
+    mainStatus.className = "status";
+  } else {
+    pasteStatus.textContent = "날짜를 못 찾았어요. 아래 칸을 확인하고 직접 채워서 추가해주세요";
+    pasteStatus.className = "status error";
+  }
 });
 
 document.getElementById("calPrevBtn").addEventListener("click", () => shiftMonth(-1));
