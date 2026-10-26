@@ -742,6 +742,45 @@ function extractDateExpr(str, defaultYear) {
   return `${y}-${String(m[2]).padStart(2, "0")}-${String(m[3]).padStart(2, "0")}`;
 }
 
+// 라벨 없는 메모에서 날짜 표현을 찾는다: "11월17일", "2026년 11월 17일", "2026-11-17", "11/17"
+function findDateInText(str, defaultYear) {
+  const pad = n => String(n).padStart(2, "0");
+  const valid = (mo, d) => mo >= 1 && mo <= 12 && d >= 1 && d <= 31;
+  let m = str.match(/(?:(\d{4})\s*년\s*)?(\d{1,2})\s*월\s*(\d{1,2})\s*일?/);
+  if (m && valid(+m[2], +m[3])) {
+    return { date: `${m[1] || defaultYear}-${pad(m[2])}-${pad(m[3])}`, matched: m[0], index: m.index };
+  }
+  m = str.match(/(\d{4})[./-](\d{1,2})[./-](\d{1,2})/);
+  if (m && valid(+m[2], +m[3])) {
+    return { date: `${m[1]}-${pad(m[2])}-${pad(m[3])}`, matched: m[0], index: m.index };
+  }
+  m = str.match(/(^|[^\d./])(\d{1,2})\/(\d{1,2})(?![\d/]|\s*분기)/);
+  if (m && valid(+m[2], +m[3])) {
+    return { date: `${defaultYear}-${pad(m[2])}-${pad(m[3])}`, matched: m[0].slice(m[1].length), index: m.index + m[1].length };
+  }
+  return null;
+}
+
+// 한 줄에서 날짜(기간이면 "~" 뒤 종료일까지)를 떼어내고 남은 글을 돌려준다
+function consumeDate(line, defaultYear) {
+  const f1 = findDateInText(line, defaultYear);
+  if (!f1) return null;
+  let end = f1.index + f1.matched.length;
+  let endDate = "";
+  const tail = line.slice(end);
+  const rm = tail.match(/^\s*[~∼]\s*/);
+  if (rm) {
+    const f2 = findDateInText(tail.slice(rm[0].length), defaultYear);
+    if (f2 && f2.index === 0) {
+      endDate = f2.date;
+      end += rm[0].length + f2.matched.length;
+    }
+  }
+  const remainder = (line.slice(0, f1.index) + " " + line.slice(end))
+    .replace(/\([월화수목금토일]\)/g, " ");
+  return { date: f1.date, endDate, remainder };
+}
+
 function parseFreeText(text) {
   const lines = text.split(/\r?\n/)
     .map(l => l.replace(/^[-*•◦]+\s*/, "").replace(/^\d+[.\)]\s*/, "").trim())
@@ -802,6 +841,43 @@ function parseFreeText(text) {
 
   result.title = contentLines.join(" ").trim();
   result.location = locationLines.join(" ").trim();
+  if (result.date) {
+    result.type = "event";
+    return result;
+  }
+
+  // 라벨 없이 "11월17일 ○○ 완료"처럼 적은 짧은 메모: 글 속 날짜를 직접 찾고 나머지를 제목으로 쓴다
+  const rest = [];
+  for (let text of lines) {
+    if (!result.date) {
+      const c = consumeDate(text, defaultYear);
+      if (c) {
+        result.date = c.date;
+        result.endDate = c.endDate;
+        text = c.remainder;
+      }
+    }
+    if (!result.startTime) {
+      const tr = text.match(/(\d{1,2})\s*:\s*(\d{2})\s*[~∼\-]\s*(\d{1,2})\s*:\s*(\d{2})/);
+      if (tr) {
+        result.startTime = `${tr[1].padStart(2, "0")}:${tr[2]}`;
+        result.endTime = `${tr[3].padStart(2, "0")}:${tr[4]}`;
+        text = text.replace(tr[0], " ");
+      } else {
+        const t1 = text.match(/(\d{1,2})\s*:\s*(\d{2})(\s*[~∼])?/);
+        if (t1) {
+          result.startTime = `${t1[1].padStart(2, "0")}:${t1[2]}`;
+          text = text.replace(t1[0], " ");
+        }
+      }
+    }
+    text = text.replace(/\s+/g, " ").replace(/^[\s,:;·\-~]+|[\s,:;·\-~]+$/g, "").trim();
+    if (text) rest.push(text);
+  }
+  if (!result.title) result.title = rest.join(" ").trim();
+
+  const EVENT_WORDS = /(회의|워크숍|세미나|간담회|설명회|미팅|행사|발표|심사|위원회|교육|전시회|방문|출장|포럼|토론)/;
+  result.type = (EVENT_WORDS.test(result.title) || result.startTime || result.endDate) ? "event" : "task";
   return result;
 }
 
@@ -1117,24 +1193,27 @@ document.getElementById("pasteParseBtn").addEventListener("click", () => {
   }
   const parsed = parseFreeText(raw);
 
-  setFormType("event");
+  const type = parsed.type || "event";
+  const typeLabel = { event: "일정", task: "할일" }[type] || "일정";
+  setFormType(type);
   if (parsed.date) {
     document.getElementById("dateInput").value = parsed.date;
     document.getElementById("endDateInput").value = parsed.endDate || parsed.date;
   }
   document.getElementById("startTimeInput").value = parsed.startTime || "00:00";
   document.getElementById("endTimeInput").value = parsed.endTime || "00:00";
-  document.getElementById("titleInput").value = parsed.title || raw.split(/\r?\n/)[0].trim();
+  const title = parsed.title || raw.split(/\r?\n/)[0].trim();
+  document.getElementById("titleInput").value = title;
   document.getElementById("memoInput").value = parsed.location || "";
 
-  if (parsed.date && (parsed.title || raw)) {
+  if (parsed.date && title) {
     document.getElementById("pasteInput").value = "";
     document.getElementById("addBtn").click();
-    pasteStatus.textContent = "";
-    mainStatus.textContent = "자동 등록 완료!";
-    mainStatus.className = "status";
+    pasteStatus.textContent = `✓ ${typeLabel}로 등록: ${parsed.date.slice(5).replace("-", "/")} ${title}` + (type === "task" ? " (일정이면 수정에서 바꿔주세요)" : "");
+    pasteStatus.className = "status";
+    setTimeout(() => { pasteStatus.textContent = ""; }, 8000);
   } else {
-    pasteStatus.textContent = "날짜를 못 찾았어요. 아래 칸을 확인하고 직접 채워서 추가해주세요";
+    pasteStatus.textContent = "날짜를 못 찾았어요. 아래 칸을 확인하고 직접 채워서 추가해주세요 (예: 11월 17일 ○○ 완료)";
     pasteStatus.className = "status error";
   }
 });
